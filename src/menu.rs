@@ -1,4 +1,4 @@
-//! Menu kontekstowe: zostają tylko pozycje do kopiowania i zaznaczania, dochodzą własne.
+//! Context menu: only the copy and select items stay, and our own are added.
 
 use std::path::Path;
 
@@ -14,7 +14,7 @@ use windows::core::{BOOL, HSTRING, Interface, PWSTR, Result};
 use crate::i18n::t;
 use crate::{clipboard, links};
 
-/// Wbudowane pozycje WebView2, które zostają (reszta: Wstecz, Odśwież, Zapisz, Drukuj… znika).
+/// Built-in WebView2 items that stay (the rest: Back, Refresh, Save, Print… is removed).
 const KEPT: &[&str] = &["copy", "copyImage", "inspectElement"];
 
 pub fn attach(webview: &ICoreWebView2, env: &ICoreWebView2Environment) -> Result<()> {
@@ -57,7 +57,7 @@ fn build(env: &ICoreWebView2Environment9, args: &ICoreWebView2ContextMenuRequest
         let mut has_selection = BOOL(0);
         target.HasSelection(&mut has_selection)?;
         if has_selection.as_bool() {
-            // Tekst liczy strona (wzory jako źródło $…$), wynik wraca wiadomością copyText.
+            // The page computes the text (formulas as $…$ source), the result comes back in a copyText message.
             menu.push(command(env, &t("menu.copyText"), || crate::webview::execute("copySelectionAsText()"))?);
         }
         let mut has_link = BOOL(0);
@@ -75,7 +75,7 @@ fn build(env: &ICoreWebView2Environment9, args: &ICoreWebView2ContextMenuRequest
         if let Some(path) = crate::webview::active_path() {
             menu.push(command(env, &t("menu.copySource"), move || copy_source(&path))?);
         }
-        // Wbudowane „Zaznacz wszystko” WebView2 pokazuje tylko w polach edycji.
+        // WebView2 shows its built-in "Select all" only in edit fields.
         menu.push(command(env, &t("menu.selectAll"), || crate::webview::execute("selectAllInActive()"))?);
         if cfg!(debug_assertions) {
             menu.extend(take("inspectElement"));

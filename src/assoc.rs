@@ -1,6 +1,6 @@
-//! Rejestracja dla plików Markdown w rejestrze bieżącego użytkownika (HKCU, bez uprawnień administratora).
-//! Windows nie pozwala programowi ustawić się jako domyślny; mdread pojawia się w „Otwórz za pomocą”
-//! i w Ustawieniach → Aplikacje domyślne, gdzie użytkownik wybiera go sam.
+//! Registration for Markdown files in the current user's registry (HKCU, no administrator rights).
+//! Windows doesn't let a program set itself as the default; mdread shows up in "Open with"
+//! and in Settings → Default apps, where the user picks it themselves.
 
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CURRENT_USER, KEY_READ, REG_DWORD, REG_SZ, RegCloseKey, RegDeleteKeyValueW, RegDeleteKeyW, RegDeleteTreeW,
@@ -21,7 +21,7 @@ const APP_KEY: &str = r"Software\mdread";
 const CAPABILITIES_KEY: &str = r"Software\mdread\Capabilities";
 const REGISTERED_APPLICATIONS_KEY: &str = r"Software\RegisteredApplications";
 
-/// Rejestruje `exe` (bieżący program albo kopię zainstalowaną) dla plików Markdown.
+/// Registers `exe` (the running program or the installed copy) for Markdown files.
 pub fn register(exe: &Path) -> Result<()> {
     let command = format!("\"{}\" \"%1\"", exe.display());
     let icon = format!("\"{}\",0", exe.display());
@@ -46,7 +46,7 @@ pub fn register(exe: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Usuwa wszystko, co dodało [`register`]. Brak wpisów nie jest błędem.
+/// Removes everything [`register`] added. Missing entries are not an error.
 pub fn unregister() {
     unsafe {
         for key in [PROG_ID_KEY, APPLICATION_KEY, APP_KEY] {
@@ -55,7 +55,7 @@ pub fn unregister() {
         for extension in EXTENSIONS {
             let key = format!(r"Software\Classes\{extension}\OpenWithProgids");
             let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, &HSTRING::from(&key), &HSTRING::from(PROG_ID));
-            // Klucze utworzone przy rejestracji znikają, o ile nie zostało w nich nic innego.
+            // Keys created during registration are removed unless something else is left in them.
             delete_if_empty(&key);
             delete_if_empty(&format!(r"Software\Classes\{extension}"));
         }
@@ -64,7 +64,7 @@ pub fn unregister() {
     notify_shell();
 }
 
-/// Wartość liczbowa (REG_DWORD) w HKCU.
+/// Numeric value (REG_DWORD) in HKCU.
 pub fn set_dword(key: &str, name: &str, value: u32) -> Result<()> {
     unsafe {
         RegSetKeyValueW(
@@ -79,7 +79,7 @@ pub fn set_dword(key: &str, name: &str, value: u32) -> Result<()> {
     }
 }
 
-/// Wartość tekstowa (REG_SZ) w HKCU; `None` jako nazwa to wartość domyślna klucza.
+/// String value (REG_SZ) in HKCU; `None` as the name means the key's default value.
 pub fn set(key: &str, name: Option<&str>, value: &str) -> Result<()> {
     let data: Vec<u16> = value.encode_utf16().chain([0]).collect();
     let name = name.map(HSTRING::from);

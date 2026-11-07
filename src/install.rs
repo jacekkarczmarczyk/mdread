@@ -1,5 +1,5 @@
-//! Instalator wbudowany w exe (MDR-25): kopia do %LOCALAPPDATA%\Programs\MDRead, skróty, rejestracja,
-//! wpis w „Aplikacje i funkcje”; odinstalowanie przez `--uninstall`. Wszystko w profilu użytkownika (HKCU).
+//! Installer built into the exe (MDR-25): copy to %LOCALAPPDATA%\Programs\MDRead, shortcuts, registration,
+//! an entry in "Apps & features"; uninstall via `--uninstall`. Everything in the user profile (HKCU).
 
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -24,7 +24,7 @@ use crate::{assoc, editor};
 
 const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\MDRead";
 const SHORTCUT: &str = "MDRead.lnk";
-/// Proces bez okna konsoli (do sprzątania katalogu po odinstalowaniu).
+/// Process without a console window (for cleaning up the directory after uninstalling).
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 pub fn install_dir() -> PathBuf {
@@ -35,18 +35,18 @@ fn installed_exe() -> PathBuf {
     install_dir().join("mdread.exe")
 }
 
-/// Czy działa kopia zainstalowana (a nie np. plik pobrany do Pobranych).
+/// Whether the installed copy is running (and not e.g. a file downloaded to Downloads).
 pub fn is_installed() -> bool {
     std::env::current_exe().is_ok_and(|exe| same(&exe, &installed_exe()))
 }
 
-/// Wybory ze strony instalacji: `associate`, `editor` (ścieżka), `startMenu`, `desktop`.
+/// Choices from the installer page: `associate`, `editor` (path), `startMenu`, `desktop`.
 pub fn install(choices: &Value) -> std::result::Result<(), String> {
     let source = std::env::current_exe().map_err(|error| error.to_string())?;
     let target = installed_exe();
     std::fs::create_dir_all(install_dir()).map_err(|error| error.to_string())?;
     if !same(&source, &target) {
-        // Działająca zainstalowana kopia blokuje plik.
+        // A running installed copy locks the file.
         std::fs::copy(&source, &target).map_err(|error| format!("{}\n\n{error}", t("install.inUse")))?;
     }
 
@@ -70,7 +70,7 @@ pub fn install(choices: &Value) -> std::result::Result<(), String> {
     Ok(())
 }
 
-/// Uruchamia zainstalowaną kopię (po instalacji) i, jeśli trzeba, ustawienia aplikacji domyślnych.
+/// Starts the installed copy (after installation) and, if needed, the default apps settings.
 pub fn launch_installed(open_default_apps: bool) {
     let mut command = Command::new(installed_exe());
     command.arg("--after").arg(std::process::id().to_string()).arg("--welcome");
@@ -94,8 +94,8 @@ fn register_uninstall(exe: &Path) -> Result<()> {
     assoc::set_dword(UNINSTALL_KEY, "EstimatedSize", size_kb as u32)
 }
 
-/// `mdread.exe --uninstall`: po potwierdzeniu usuwa rejestrację, skróty, wpis odinstalowania, dane WebView2
-/// i katalog programu (ustawienia w %APPDATA%\mdread zostają, jak w większości programów).
+/// `mdread.exe --uninstall`: after confirmation removes the registration, shortcuts, uninstall entry, WebView2 data
+/// and the program directory (settings in %APPDATA%\mdread stay, as in most programs).
 pub fn uninstall() {
     let answer = unsafe { MessageBoxW(None, &HSTRING::from(t("uninstall.confirm")), w!("MDRead"), MB_YESNO | MB_ICONQUESTION) };
     if answer != IDYES {
@@ -113,8 +113,8 @@ pub fn uninstall() {
     }
     let webview_data = PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join("mdread");
     let dir = install_dir();
-    // Działający exe nie usunie sam siebie: robi to cmd chwilę po zakończeniu tego procesu.
-    // Usuwamy tylko dokładnie te katalogi, i tylko gdy w katalogu programu jest nasz exe.
+    // A running exe cannot delete itself: cmd does it shortly after this process exits.
+    // Remove only exactly these directories, and only when our exe is in the program directory.
     if installed_exe().exists() {
         let script = format!(
             "ping -n 3 127.0.0.1 >nul & rmdir /s /q \"{}\" & rmdir /s /q \"{}\"",
@@ -125,7 +125,7 @@ pub fn uninstall() {
     }
 }
 
-/// Zamyka otwarte okna MDRead (zablokowany exe nie dałby się usunąć); czeka do ~3 s.
+/// Closes open MDRead windows (a locked exe could not be deleted); waits up to ~3 s.
 fn close_running() {
     for _ in 0..30 {
         let Ok(hwnd) = (unsafe { FindWindowW(CLASS_NAME, None) }) else { return };

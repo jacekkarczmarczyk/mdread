@@ -1,6 +1,6 @@
 /*
- * Motywy: <html data-theme="github|jetbrains|vscode|fluent|reading" data-scheme="light|dark">.
- * Reszta stylów (app.css) używa tylko tych zmiennych.
+ * Themes: <html data-theme="github|jetbrains|vscode|fluent|reading" data-scheme="light|dark">.
+ * The rest of the styles (app.css) use only these variables.
  */
 
 :root {
@@ -33,7 +33,7 @@
   --tok-title: #d2a8ff; --tok-type: #ffa657; --tok-attr: #79c0ff; --tok-meta: #79c0ff;
 }
 
-/* JetBrains: IntelliJ Light / Darcula (nowy interfejs) */
+/* JetBrains: IntelliJ Light / Darcula (new UI) */
 
 :root[data-theme="jetbrains"] {
   --font-text: "Inter", "Segoe UI", sans-serif;
@@ -59,7 +59,7 @@
   --tok-title: #56a8f5; --tok-type: #bcbec4; --tok-attr: #c77dbb; --tok-meta: #b3ae60;
 }
 
-/* VS Code: Light+ / Dark+ (jak podgląd Markdown) */
+/* VS Code: Light+ / Dark+ (like the Markdown preview) */
 
 :root[data-theme="vscode"] {
   --font-text: "Segoe WPC", "Segoe UI", sans-serif;
@@ -86,7 +86,7 @@
   --tok-title: #dcdcaa; --tok-type: #4ec9b0; --tok-attr: #9cdcfe; --tok-meta: #c586c0;
 }
 
-/* Fluent: jak Notatnik w Windows 11 */
+/* Fluent: like Notepad in Windows 11 */
 
 :root[data-theme="fluent"] {
   --font-text: "Segoe UI Variable Text", "Segoe UI", sans-serif;
@@ -111,7 +111,7 @@
   --tok-title: #f4bf75; --tok-type: #6fdccf; --tok-attr: #d6b8ff; --tok-meta: #d6b8ff;
 }
 
-/* Czytelnia: krój szeryfowy, węższa kolumna, sepia w jasnym */
+/* Reading: serif typeface, narrower column, sepia in light mode */
 
 :root[data-theme="reading"] {
   --font-text: Charter, "Bitstream Charter", Cambria, Georgia, serif;
@@ -139,7 +139,7 @@
   --tok-title: #c9a0dc; --tok-type: #7ab8c8; --tok-attr: #e0a96d; --tok-meta: #c9a0dc;
 }
 
-/* Kolorowanie kodu (klasy highlight.js) w barwach motywu */
+/* Syntax highlighting (highlight.js classes) in theme colors */
 
 .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag { color: var(--tok-keyword); }
 .hljs-string, .hljs-regexp, .hljs-addition, .hljs-template-tag { color: var(--tok-string); }

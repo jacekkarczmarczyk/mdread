@@ -1,4 +1,4 @@
-//! Pomiar czasu od utworzenia procesu. Zapis tylko, gdy zmienna `MDREAD_TIMING` wskazuje plik logu.
+//! Time measured since process creation. Written only when the `MDREAD_TIMING` variable points to a log file.
 
 use std::fs::OpenOptions;
 use std::io::Write;

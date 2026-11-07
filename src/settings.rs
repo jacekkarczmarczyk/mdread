@@ -1,4 +1,4 @@
-//! Ustawienia w %APPDATA%\mdread\settings.json.
+//! Settings in %APPDATA%\mdread\settings.json.
 
 use std::path::PathBuf;
 
@@ -9,15 +9,15 @@ fn file() -> PathBuf {
 }
 
 fn load() -> Map<String, Value> {
-    // BOM dodaje np. Notatnik albo PowerShell 5.1 przy ręcznej edycji pliku.
+    // A BOM is added e.g. by Notepad or PowerShell 5.1 when the file is edited by hand.
     std::fs::read(file())
         .ok()
         .and_then(|bytes| serde_json::from_slice(bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes)).ok())
         .unwrap_or_default()
 }
 
-/// Zapis z wymuszeniem na dysk (`sync_all` = FlushFileBuffers), żeby po awarii systemu sesja i ustawienia
-/// nie zginęły w pamięci podręcznej Windows. Zapisy są rzadkie (zmiana karty, koniec przewijania).
+/// Writes and forces the data to disk (`sync_all` = FlushFileBuffers), so the session and settings are not lost
+/// in the Windows cache after a system crash. Writes are rare (tab switch, end of scrolling).
 fn save(settings: &Map<String, Value>) {
     use std::io::Write;
 
@@ -34,7 +34,7 @@ fn save(settings: &Map<String, Value>) {
 pub const THEMES: &[&str] = &["github", "jetbrains", "vscode", "fluent", "reading"];
 pub const MODES: &[&str] = &["system", "light", "dark"];
 
-/// Wygląd zapisany przez stronę: motyw, tryb i kolory potrzebne przed jej załadowaniem.
+/// Appearance saved by the page: theme, mode and the colors needed before it loads.
 pub struct Appearance {
     pub theme: String,
     pub mode: String,
@@ -59,7 +59,7 @@ pub fn appearance() -> Appearance {
     }
 }
 
-/// Zapisuje wygląd z wiadomości strony (`theme`, `mode`, `caption`, `text`, `background`).
+/// Saves the appearance from a page message (`theme`, `mode`, `caption`, `text`, `background`).
 pub fn set_appearance(message: &Value) {
     let mut settings = load();
     for key in ["theme", "mode", "caption", "text", "background"] {
@@ -70,7 +70,7 @@ pub fn set_appearance(message: &Value) {
     save(&settings);
 }
 
-/// Otwarte karty z ostatniego uruchomienia: `{ "tabs": [{ "path", "position" }], "active": ścieżka }`.
+/// Tabs open in the last run: `{ "tabs": [{ "path", "position" }], "active": path }`.
 pub fn session() -> Option<Value> {
     load().get("session").cloned()
 }
@@ -81,7 +81,7 @@ pub fn set_session(session: Value) {
     save(&settings);
 }
 
-/// `system`, `pl` albo `en`.
+/// `system`, `pl` or `en`.
 pub fn language() -> String {
     load().get("language").and_then(Value::as_str).unwrap_or("system").to_owned()
 }
@@ -102,7 +102,7 @@ pub fn set_zoom(zoom: f64) {
     save(&settings);
 }
 
-/// Notatnik usunięty z listy edytorów (przycisk × w menu „Edytuj”).
+/// Notepad removed from the editor list (× button in the Edit menu).
 pub fn notepad_hidden() -> bool {
     load().get("notepadHidden").and_then(Value::as_bool).unwrap_or(false)
 }
@@ -113,7 +113,7 @@ pub fn set_notepad_hidden(hidden: bool) {
     save(&settings);
 }
 
-/// Szerokość panelu spisu treści w pikselach CSS (wspólna dla wszystkich plików).
+/// Width of the outline panel in CSS pixels (shared by all files).
 pub fn outline_width() -> Option<u64> {
     load().get("outlineWidth").and_then(Value::as_u64)
 }
@@ -124,7 +124,7 @@ pub fn set_outline_width(width: u64) {
     save(&settings);
 }
 
-/// Czy nowo otwierane pliki mają od razu otwarty spis treści (domyślnie tak).
+/// Whether newly opened files show the outline right away (yes by default).
 pub fn outline_default() -> bool {
     load().get("outlineDefault").and_then(Value::as_bool).unwrap_or(true)
 }
@@ -142,7 +142,7 @@ pub fn parse_color(text: &str) -> Option<u32> {
     Some(((rgb & 0xFF) << 16) | (rgb & 0xFF00) | (rgb >> 16))
 }
 
-/// Zewnętrzny edytor wybrany przez użytkownika; `None` oznacza Notatnik.
+/// External editor chosen by the user; `None` means Notepad.
 pub fn editor() -> Option<PathBuf> {
     load().get("editor").and_then(Value::as_str).map(PathBuf::from)
 }
@@ -156,7 +156,7 @@ pub fn set_editor(editor: Option<PathBuf>) {
     save(&settings);
 }
 
-/// Lista edytorów poza Notatnikiem; `None`, dopóki nie została utworzona (pierwszy start).
+/// Editors other than Notepad; `None` until the list has been created (first start).
 pub fn editors() -> Option<Vec<PathBuf>> {
     let list = load().get("editors")?.as_array()?.iter().filter_map(Value::as_str).map(PathBuf::from).collect();
     Some(list)

@@ -3,7 +3,7 @@ use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenC
 use windows::Win32::System::Memory::{GMEM_MOVEABLE, GlobalAlloc, GlobalLock, GlobalUnlock};
 use windows::Win32::System::Ole::CF_UNICODETEXT;
 
-/// Wkłada do schowka sam tekst (bez HTML).
+/// Puts plain text on the clipboard (no HTML).
 pub fn set_text(text: &str) {
     let wide: Vec<u16> = text.encode_utf16().chain([0]).collect();
     unsafe {
@@ -18,7 +18,7 @@ pub fn set_text(text: &str) {
             } else {
                 std::ptr::copy_nonoverlapping(wide.as_ptr(), target, wide.len());
                 let _ = GlobalUnlock(memory);
-                // Po udanym SetClipboardData pamięć należy do schowka.
+                // After a successful SetClipboardData the memory belongs to the clipboard.
                 if SetClipboardData(CF_UNICODETEXT.0 as u32, Some(HANDLE(memory.0))).is_err() {
                     let _ = GlobalFree(Some(memory));
                 }

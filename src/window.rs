@@ -31,21 +31,21 @@ use crate::{editor, instance, settings, watcher, webview};
 
 pub const CLASS_NAME: PCWSTR = w!("mdread.window");
 
-/// Okna dialogowe pokazujemy z pętli komunikatów, a nie z callbacku WebView2.
+/// Dialogs are shown from the message loop, not from a WebView2 callback.
 const WM_APP_OPEN_DIALOG: u32 = WM_APP + 1;
 const WM_APP_CHOOSE_EDITOR: u32 = WM_APP + 2;
 
-/// Filtry okna dialogowego: (klucz nazwy w słowniku, wzorzec).
+/// Dialog filters: (name key in the string table, pattern).
 const MARKDOWN_FILTERS: &[(&str, &str)] =
     &[("dialog.markdown", "*.md;*.markdown;*.mdown;*.mkd"), ("dialog.allFiles", "*.*")];
 const PROGRAM_FILTERS: &[(&str, &str)] = &[("dialog.programs", "*.exe")];
 
-/// Rozmiar okna instalatora (piksele przy 100% skalowania): sam panel, bez kart.
+/// Installer window size (pixels at 100% scaling): just the panel, no tabs.
 const INSTALLER_SIZE: (i32, i32) = (600, 700);
 
 pub fn create(installer: bool) -> Result<HWND> {
     let appearance = settings::appearance();
-    // Instalator: małe okno jak okno dialogowe (bez maksymalizacji i zmiany rozmiaru), na środku ekranu.
+    // Installer: a small dialog-like window (no maximizing or resizing), centered on the screen.
     let (style, x, y, width, height) = if installer {
         let scale = unsafe { GetDpiForSystem() } as i32;
         let (width, height) = (INSTALLER_SIZE.0 * scale / 96, INSTALLER_SIZE.1 * scale / 96);
@@ -57,13 +57,13 @@ pub fn create(installer: bool) -> Result<HWND> {
     };
     unsafe {
         let instance = HINSTANCE(GetModuleHandleW(None)?.0);
-        // Tło w kolorze ostatniego motywu, żeby przed załadowaniem strony nie błysnęło białe okno.
+        // Background in the last theme's color so a white window does not flash before the page loads.
         let background = appearance.background.map(|color| CreateSolidBrush(COLORREF(color))).unwrap_or_default();
         let class = WNDCLASSW {
             lpfnWndProc: Some(window_proc),
             hInstance: instance,
             hCursor: LoadCursorW(None, IDC_ARROW)?,
-            // Ikona z zasobów exe (identyfikator 1, patrz build.rs).
+            // Icon from the exe resources (id 1, see build.rs).
             hIcon: LoadIconW(Some(instance), PCWSTR(1 as _)).unwrap_or_default(),
             hbrBackground: background,
             lpszClassName: CLASS_NAME,
@@ -90,7 +90,7 @@ pub fn create(installer: bool) -> Result<HWND> {
     }
 }
 
-/// Dopasowuje wysokość okna instalatora do treści (`client_height` w pikselach ekranu) i środkuje je.
+/// Fits the installer window height to its content (`client_height` in screen pixels) and centers it.
 pub fn fit_client_height(hwnd: HWND, client_height: i32) {
     unsafe {
         let mut window = RECT::default();
@@ -112,7 +112,7 @@ pub fn fit_client_height(hwnd: HWND, client_height: i32) {
     }
 }
 
-/// „Uruchom bez instalacji”: okno instalatora staje się zwykłym oknem (zmiana rozmiaru, maksymalizacja).
+/// "Run without installing": the installer window becomes a regular window (resizing, maximizing).
 pub fn make_normal(hwnd: HWND) {
     unsafe {
         let scale = GetDpiForSystem() as i32;
@@ -131,7 +131,7 @@ pub fn make_normal(hwnd: HWND) {
     }
 }
 
-/// Pasek tytułu w kolorach motywu: tryb ciemny/jasny ramki oraz (Windows 11) kolor tła i tekstu.
+/// Title bar in the theme colors: dark/light frame mode and (Windows 11) background and text color.
 pub fn apply_frame(hwnd: HWND, appearance: &settings::Appearance) {
     let dark = if appearance.mode == "system" { system_dark() } else { appearance.mode == "dark" };
     unsafe {
@@ -146,7 +146,7 @@ pub fn apply_frame(hwnd: HWND, appearance: &settings::Appearance) {
     }
 }
 
-/// Czy Windows używa ciemnego motywu aplikacji.
+/// Whether Windows uses the dark app theme.
 pub fn system_dark() -> bool {
     let mut value = 1u32;
     let mut size = size_of::<u32>() as u32;
@@ -212,7 +212,7 @@ fn bring_to_front(hwnd: HWND) {
 }
 
 fn show_open_dialog(hwnd: HWND, filters: &[(&str, &str)], multiple: bool) -> Result<Vec<PathBuf>> {
-    // Teksty filtrów muszą żyć do końca wywołania SetFileTypes.
+    // The filter texts must live until the SetFileTypes call returns.
     let texts: Vec<(HSTRING, HSTRING)> =
         filters.iter().map(|(name, spec)| (HSTRING::from(t(name)), HSTRING::from(*spec))).collect();
     let filters: Vec<COMDLG_FILTERSPEC> = texts
@@ -228,7 +228,7 @@ fn show_open_dialog(hwnd: HWND, filters: &[(&str, &str)], multiple: bool) -> Res
         dialog.SetOptions(options)?;
         dialog.SetFileTypes(&filters)?;
         if dialog.Show(Some(hwnd)).is_err() {
-            return Ok(Vec::new()); // anulowane
+            return Ok(Vec::new()); // cancelled
         }
         let items = dialog.GetResults()?;
         let mut paths = Vec::new();
@@ -284,7 +284,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         }
         WM_APP_CHOOSE_EDITOR => {
             if let Some(program) = show_open_dialog(hwnd, PROGRAM_FILTERS, false).ok().and_then(|paths| paths.into_iter().next()) {
-                // Dodany program staje się domyślny i od razu otwiera bieżący plik (jak wybór z listy).
+                // The added program becomes the default and opens the current file at once (like a list pick).
                 editor::add(&program);
                 webview::send(editor::info());
                 if let Some(document) = webview::active_path() {

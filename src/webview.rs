@@ -1,4 +1,4 @@
-//! WebView2: środowisko, kontroler, wbudowane zasoby UI i wymiana wiadomości ze stroną.
+//! WebView2: environment, controller, embedded UI resources and message exchange with the page.
 
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
@@ -26,7 +26,7 @@ use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
 use crate::{assets, clipboard, editor, i18n, install, links, menu, settings, timing, unc, watcher, window};
 
-// `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
+// `.localhost` resolves without DNS; with `.local` Windows queried mDNS and navigation took ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
 
 const CSP: &str = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'";
@@ -39,7 +39,7 @@ struct State {
     page_ready: bool,
     pending: Vec<String>,
     active_path: Option<PathBuf>,
-    /// Okno instalatora: strona od pierwszej klatki pokazuje tylko panel instalacji.
+    /// Installer window: from the first frame the page shows only the installer panel.
     installer: bool,
 }
 
@@ -47,14 +47,14 @@ thread_local! {
     static STATE: RefCell<State> = RefCell::default();
 }
 
-/// Uruchamia tworzenie środowiska WebView2 dla okna `hwnd`; dalsze kroki idą przez callbacki.
+/// Starts creating the WebView2 environment for the `hwnd` window; further steps go through callbacks.
 pub fn start(hwnd: HWND) -> Result<()> {
     STATE.with_borrow_mut(|state| state.hwnd = hwnd);
     let data_dir = std::env::var("LOCALAPPDATA").unwrap_or_default() + "\\mdread";
     let handler = CreateCoreWebView2EnvironmentCompletedHandler::create(Box::new(|result, env| {
         result.and_then(|()| env.ok_or_else(|| Error::from(E_POINTER))).and_then(on_environment).or_else(fatal)
     }));
-    // Język wbudowanych tekstów WebView2 (np. „Kopiuj” w menu kontekstowym) taki jak aplikacji.
+    // Language of the built-in WebView2 texts (e.g. "Copy" in the context menu) same as the app's.
     let options = CoreWebView2EnvironmentOptions::default();
     unsafe { options.set_language(i18n::locale().to_owned()) };
     let options: ICoreWebView2EnvironmentOptions = options.into();
@@ -63,7 +63,7 @@ pub fn start(hwnd: HWND) -> Result<()> {
     }
 }
 
-/// Wysyła wiadomość JSON do strony albo kolejkuje ją do czasu, aż strona się załaduje.
+/// Sends a JSON message to the page or queues it until the page has loaded.
 pub fn send(message: Value) {
     let json = message.to_string();
     let webview = STATE.with_borrow_mut(|state| {
@@ -81,7 +81,7 @@ pub fn send(message: Value) {
     }
 }
 
-/// Uruchamia skrypt na stronie bez czekania na wynik.
+/// Runs a script on the page without waiting for the result.
 pub fn execute(script: &str) {
     if let Some(webview) = STATE.with_borrow(|state| state.webview.clone()) {
         let handler = ExecuteScriptCompletedHandler::create(Box::new(|_, _| Ok(())));
@@ -119,12 +119,12 @@ pub fn set_installer(installer: bool) {
     STATE.with_borrow_mut(|state| state.installer = installer);
 }
 
-/// Główne okno, jeśli już istnieje.
+/// The main window, if it already exists.
 pub fn window() -> Option<HWND> {
     STATE.with_borrow(|state| (!state.hwnd.is_invalid()).then_some(state.hwnd))
 }
 
-/// Plik w aktywnej karcie.
+/// The file in the active tab.
 pub fn active_path() -> Option<PathBuf> {
     STATE.with_borrow(|state| state.active_path.clone())
 }
@@ -193,8 +193,8 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             })),
             &mut token,
         )?;
-        // Strona nigdy nie opuszcza index.html (także nie przechodzi na pliki spod /local/): linki obsługuje
-        // skrypt, a nowe okna są blokowane.
+        // The page never leaves index.html (nor navigates to files under /local/): links are handled by
+        // the script, and new windows are blocked.
         webview.add_NavigationStarting(
             &NavigationStartingEventHandler::create(Box::new(|_, args| {
                 if let Some(args) = args {
@@ -364,7 +364,7 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
     }
 }
 
-/// Ścieżki plików upuszczonych na stronę (przekazane przez `postMessageWithAdditionalObjects`).
+/// Paths of files dropped onto the page (passed via `postMessageWithAdditionalObjects`).
 fn dropped_paths(args: &ICoreWebView2WebMessageReceivedEventArgs) -> Vec<PathBuf> {
     let mut paths = Vec::new();
     let Ok(args) = args.cast::<ICoreWebView2WebMessageReceivedEventArgs2>() else {
@@ -416,13 +416,13 @@ fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourc
     unsafe { args.SetResponse(&response) }
 }
 
-/// Wstawia zapisany motyw do `<html>`, żeby strona od pierwszej klatki miała właściwe kolory.
+/// Inserts the saved theme into `<html>` so the page has the right colors from the first frame.
 fn with_appearance(html: &[u8]) -> String {
     let appearance = settings::appearance();
     let dark = if appearance.mode == "system" { window::system_dark() } else { appearance.mode == "dark" };
     let scheme = if dark { "dark" } else { "light" };
     let installer = if STATE.with_borrow(|state| state.installer) { " data-installer" } else { "" };
-    // Zapamiętana szerokość spisu treści od pierwszej klatki (zmienna CSS dziedziczona przez panel).
+    // Remembered outline width from the first frame (a CSS variable inherited by the panel).
     let mut outline = settings::outline_width().map(|width| format!(" style=\"--outline-width: {width}px\"")).unwrap_or_default();
     if !settings::outline_default() {
         outline.push_str(" data-outline-default=\"0\"");
@@ -439,7 +439,7 @@ fn with_appearance(html: &[u8]) -> String {
     )
 }
 
-/// Kolor tła WebView widoczny, zanim strona się narysuje.
+/// WebView background color visible before the page is drawn.
 fn set_background(controller: &ICoreWebView2Controller, color: Option<u32>) {
     let Some(color) = color else { return };
     let Ok(controller) = controller.cast::<ICoreWebView2Controller2>() else { return };
@@ -449,8 +449,8 @@ fn set_background(controller: &ICoreWebView2Controller, color: Option<u32>) {
     }
 }
 
-/// Obrazek z dysku dla `<img>` w dokumencie. Inne typy plików nie są serwowane, a ścieżki
-/// sieciowe tylko z serwerów, z których otwarto dokument (patrz `unc`).
+/// An image from disk for an `<img>` in the document. Other file types are not served, and network
+/// paths only from servers the document was opened from (see `unc`).
 fn local_image(encoded_path: &str) -> Option<(Vec<u8>, &'static str)> {
     let path = PathBuf::from(percent_decode(encoded_path).replace('/', "\\"));
     if !unc::may_read(&path) {

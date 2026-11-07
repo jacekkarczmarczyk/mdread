@@ -49,16 +49,16 @@ fn main() {
     if flag(&args, "--uninstall") {
         return install::uninstall();
     }
-    // Strona instalacji: na życzenie albo gdy pobrany exe uruchomiono bez plików (build debug wtedy
-    // otwiera zwykłe puste okno, żeby nie przeszkadzać przy pracy).
+    // Installer page: on request, or when a downloaded exe is started without files (a debug build then
+    // opens a plain empty window so it does not get in the way during development).
     let installer = flag(&args, "--install")
         || (args.is_empty() && !install::is_installed() && !cfg!(debug_assertions));
     args.retain(|arg| arg != "--install");
-    // `--welcome`: pierwsze uruchomienie po instalacji otwiera pomoc.
+    // `--welcome`: the first run after installation opens the help.
     let welcome = flag(&args, "--welcome");
     args.retain(|arg| arg != "--welcome");
-    // `--after <pid>`: ponowne uruchomienie (np. po zmianie języka) czeka, aż poprzednie okno się zamknie,
-    // inaczej oddałoby mu pliki jako druga instancja.
+    // `--after <pid>`: a restart (e.g. after a language change) waits for the previous window to close,
+    // otherwise it would hand the files over to it as a second instance.
     if let Some(index) = args.iter().position(|arg| arg == "--after") {
         let pid = args.get(index + 1).and_then(|pid| pid.to_str()?.parse().ok());
         args.drain(index..(index + 2).min(args.len()));
@@ -70,7 +70,7 @@ fn main() {
         .into_iter()
         .map(|arg| std::path::absolute(&arg).unwrap_or_else(|_| PathBuf::from(arg)))
         .collect();
-    // Instalator działa obok ewentualnie uruchomionego MDRead, nie oddaje mu sterowania.
+    // The installer runs alongside any MDRead already running and does not hand control over to it.
     if !installer && !instance::claim(&paths) {
         return;
     }
@@ -87,7 +87,7 @@ fn main() {
     timing::mark("window shown");
     watcher::start(hwnd);
 
-    // Callback środowiska potrafi przyjść już w trakcie tworzenia okna, więc start dopiero, gdy HWND istnieje.
+    // The environment callback can arrive while the window is still being created, so start only once the HWND exists.
     if let Err(error) = webview::start(hwnd) {
         fatal(&format!("{}\n\n{error}", t("error.webviewMissing")));
     }
@@ -101,7 +101,7 @@ fn main() {
         }));
     }
     webview::send(editors);
-    // Pozycja „Pokaż w Total Commanderze” w menu karty tylko, gdy jest zainstalowany.
+    // The "Show in Total Commander" tab menu item only when it is installed.
     webview::send(json!({ "type": "totalCommander", "available": links::total_commander().is_some() }));
     if !installer {
         help::path();
@@ -111,7 +111,7 @@ fn main() {
     if welcome {
         help::open();
     }
-    // Od teraz strona zapisuje sesję (wcześniej każda odtwarzana karta oznaczałaby osobny zapis na dysk).
+    // From now on the page saves the session (before this, every restored tab would mean a separate disk write).
     webview::send(json!({ "type": "startupDone" }));
     window::run_loop();
 }
@@ -125,8 +125,8 @@ fn wait_for_exit(pid: u32) {
     }
 }
 
-/// Uruchamia mdread od nowa z tymi samymi kartami (ostatnia ścieżka to karta aktywna, którą strona
-/// wtedy przełącza) i zamyka bieżące okno.
+/// Restarts mdread with the same tabs (the last path is the active tab, which the page then
+/// switches to) and closes the current window.
 pub fn restart(paths: &[PathBuf], active: Option<&Path>) {
     let Ok(exe) = std::env::current_exe() else { return };
     let mut command = Command::new(exe);
@@ -141,8 +141,8 @@ pub fn restart(paths: &[PathBuf], active: Option<&Path>) {
     }
 }
 
-/// `mdread.exe --register [--quiet]`: wpisy w rejestrze i (bez `--quiet`) pytanie o otwarcie
-/// ustawień aplikacji domyślnych, bo domyślny program Windows każe wybrać użytkownikowi.
+/// `mdread.exe --register [--quiet]`: registry entries and (without `--quiet`) an offer to open the
+/// default apps settings, because Windows makes the user choose the default program.
 fn register(quiet: bool) {
     let registered = std::env::current_exe().map_err(Into::into).and_then(|exe| assoc::register(&exe));
     if let Err(error) = registered {
@@ -162,15 +162,15 @@ fn register(quiet: bool) {
     }
 }
 
-/// Ustawienia → Aplikacje domyślne na stronie MDRead (domyślny program wybiera użytkownik).
+/// Settings → Default apps on the MDRead page (the user chooses the default program).
 pub fn open_default_apps() {
     unsafe {
         ShellExecuteW(None, w!("open"), w!("ms-settings:defaultapps?registeredAppUser=mdread"), None, None, SW_SHOWNORMAL);
     }
 }
 
-/// Karty z poprzedniego uruchomienia (jak w Notatniku): w tej samej kolejności, z pozycją czytania,
-/// na końcu ponownie aktywna karta (strona przełącza na już otwartą). Pliki, których nie ma, są pomijane.
+/// Tabs from the previous run (as in Notepad): in the same order, with the reading position, and
+/// the active tab again at the end (the page switches to the already open one). Missing files are skipped.
 fn restore_session() {
     let Some(session) = settings::session() else { return };
     for tab in session["tabs"].as_array().into_iter().flatten() {
@@ -182,25 +182,25 @@ fn restore_session() {
     }
 }
 
-/// Otwiera pliki w kartach (strona przełącza na już otwartą kartę tego samego pliku).
+/// Opens files in tabs (the page switches to an already open tab of the same file).
 pub fn open_paths(paths: &[PathBuf]) {
     for path in paths {
         open_path(path, None);
     }
 }
 
-/// Od tego rozmiaru karta najpierw pyta (pomiar: ~1 s otwierania na każdy MB, MDR-19).
+/// From this size on the tab asks first (measured: ~1 s of opening per MB, MDR-19).
 const WARN_SIZE: u64 = 2 * 1024 * 1024;
-/// Od tego rozmiaru podgląd odmawia i proponuje edytor.
+/// From this size on the preview refuses and suggests an editor.
 const MAX_SIZE: u64 = 20 * 1024 * 1024;
 
-/// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana. Duży albo binarny plik
-/// dostaje zamiast treści komunikat z wyborem (patrz [`notice`]).
+/// Opens a file in a tab and scrolls to `anchor`, if given. A large or binary file gets
+/// a message with choices instead of its content (see [`notice`]).
 pub fn open_path(path: &Path, anchor: Option<&str>) {
     open_document(path, anchor, None);
 }
 
-/// Jak [`open_path`], z pozycją czytania do odtworzenia (karta z poprzedniego uruchomienia).
+/// Like [`open_path`], with a reading position to restore (a tab from the previous run).
 fn open_document(path: &Path, anchor: Option<&str>, position: Option<&Value>) {
     let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
     unc::trust_document(&path);
@@ -216,7 +216,7 @@ fn open_document(path: &Path, anchor: Option<&str>, position: Option<&Value>) {
     webview::send(message);
 }
 
-/// Wczytuje plik ponownie do jego karty (po „Odśwież” albo po potwierdzeniu dużego pliku).
+/// Reloads a file into its tab (after "Reload" or after a large file is confirmed).
 pub fn reload_path(path: &Path) {
     let message = match notice(path, true) {
         Some(notice) => json!({ "type": "reload", "path": path, "title": file_name(path), "notice": notice }),
@@ -228,7 +228,7 @@ pub fn reload_path(path: &Path) {
     webview::send(message);
 }
 
-/// Komunikat zamiast treści: plik binarny, za duży albo (bez `confirmed`) duży do potwierdzenia.
+/// A message instead of content: a binary file, a too large one, or (without `confirmed`) a large one to confirm.
 fn notice(path: &Path, confirmed: bool) -> Option<Value> {
     use std::io::Read;
 
@@ -260,7 +260,7 @@ fn document_message(kind: &str, path: &Path) -> Value {
     }
 }
 
-/// Treść pliku jako tekst (UTF-8, bez BOM).
+/// File content as text (UTF-8, without BOM).
 pub fn read_source(path: &Path) -> std::io::Result<String> {
     let bytes = std::fs::read(path)?;
     let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes);
@@ -271,7 +271,7 @@ fn file_name(path: &Path) -> String {
     path.file_name().unwrap_or(path.as_os_str()).to_string_lossy().into_owned()
 }
 
-/// Komunikat błędu nad oknem aplikacji (albo samodzielny, jeśli okna jeszcze nie ma).
+/// Error message box over the app window (or standalone if there is no window yet).
 pub fn show_error(message: &str) {
     unsafe {
         MessageBoxW(webview::window(), &HSTRING::from(message), w!("MDRead"), MB_ICONERROR);

@@ -1,4 +1,4 @@
-/* Kolory i kroje pochodzą z themes.css */
+/* Colors and typefaces come from themes.css */
 
 html, body {
   height: 100%;
@@ -10,7 +10,7 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  /* Przewijają się karty i strona instalacji, nigdy cała strona */
+  /* Tabs and the installer page scroll, never the whole page */
   overflow: hidden;
   font-family: var(--font-text);
   font-size: var(--font-size);
@@ -19,7 +19,7 @@ body {
 
 [hidden] { display: none !important; }
 
-/* Pasek kart */
+/* Tab bar */
 
 #tabbar {
   display: flex;
@@ -56,7 +56,7 @@ body {
 
 .tab:hover { background: var(--tab-hover); }
 .tab.active { background: var(--bg); color: var(--fg); }
-/* Przeciąganie: sąsiednie karty rozsuwają się płynnie, przeciągana jest nad nimi, z cieniem */
+/* Dragging: neighboring tabs slide aside smoothly, the dragged one sits above them with a shadow */
 .tab { position: relative; transition: transform .15s ease; }
 .tab.dragging { z-index: 1; box-shadow: 0 2px 8px rgb(0 0 0 / .3); transition: transform .12s ease; }
 
@@ -95,7 +95,7 @@ body {
   font-size: 20px;
 }
 
-/* Lista wszystkich kart: przycisk jak „+”, menu z nazwą pliku i folderem */
+/* List of all tabs: button like "+", menu with file name and folder */
 #tab-list-button {
   display: grid;
   place-items: center;
@@ -115,11 +115,11 @@ body {
 #tab-list button:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tab-list small { margin-left: 8px; color: var(--muted); font-size: 11px; }
 
-/* Menu karty pod prawym przyciskiem: w miejscu kursora */
+/* Tab context menu (right click): at the cursor position */
 #tab-menu { position: fixed; top: 0; right: auto; font: 13px/1.4 var(--font-ui); }
 .menu button:disabled { color: var(--muted); background: none; opacity: .6; }
 
-/* Przyciski po prawej: wzory, wygląd, edycja */
+/* Buttons on the right: formulas, appearance, edit */
 
 #tools {
   display: flex;
@@ -150,7 +150,7 @@ body {
 .split > .tool:first-child { border-radius: 6px 0 0 6px; }
 .split > .tool + .tool { margin-left: -1px; padding: 0 6px; border-radius: 0 6px 6px 0; }
 
-/* Wszystkie ikony przycisków: obrys 1,5 px na siatce 16×16 */
+/* All button icons: 1.5 px stroke on a 16×16 grid */
 .tool svg {
   flex: none;
   width: 14px;
@@ -162,10 +162,10 @@ body {
   stroke-linejoin: round;
 }
 
-/* Ikona rysowana na siatce 24×24 (zębatka): ta sama grubość linii co ikony 16×16 */
+/* Icon drawn on a 24×24 grid (gear): same line weight as the 16×16 icons */
 .tool svg.icon-24 { stroke-width: 2.25; }
 
-/* Przyciski z samą ikoną: kwadratowe */
+/* Icon-only buttons: square */
 #appearance-button { padding: 0 7px; }
 
 .menu {
@@ -194,10 +194,10 @@ body {
 }
 
 .menu button:hover { background: var(--tab-hover); }
-/* Pozycje w jednej linii: menu poszerza się do najdłuższej */
+/* Items on one line: the menu widens to fit the longest */
 #appearance-menu button { white-space: nowrap; }
 
-/* Pozycja z ikoną (edytory, „Dodaj program…”) i przyciskiem usuwania po prawej */
+/* Item with an icon (editors, "Add program…") and a remove button on the right */
 .menu button:has(.menu-icon) { display: flex; align-items: center; gap: 8px; }
 .menu-icon { flex: none; width: 16px; height: 16px; }
 svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
@@ -207,12 +207,12 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 .menu .menu-remove:hover { color: var(--fg); }
 .menu-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
 .menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 14px; }
-/* Pusta lista edytorów: bez kreski nad „Dodaj program…” */
+/* Empty editor list: no separator above "Add program…" */
 #editor-list:empty + hr { display: none; }
 .menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); background: none; }
 .menu-label { padding: 6px 10px 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 
-/* Podpowiedź z adresem linku */
+/* Tooltip with the link address */
 
 #link-tip {
   position: fixed;
@@ -235,7 +235,7 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 
 #link-tip small { color: var(--muted); }
 
-/* Pasek „plik zmieniony / usunięty” i kropka na karcie */
+/* "File changed / deleted" bar and the dot on the tab */
 
 #file-bars { flex: none; }
 
@@ -253,7 +253,7 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 .file-bar-deleted span { color: #d1242f; }
 :root[data-scheme="dark"] .file-bar-deleted span { color: #f85149; }
 
-/* Niewczytany obrazek z internetu: ramka z ikoną i tekstem alternatywnym */
+/* Unloaded remote image: a frame with an icon and the alt text */
 .remote-image {
   display: inline-flex;
   align-items: center;
@@ -275,9 +275,9 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 
 .tab.stale .tab-title::after { content: " ●"; color: var(--link); font-size: 10px; }
 
-/* Dokumenty: każda karta przewija się osobno, więc pozycja zostaje przy przełączaniu */
+/* Documents: each tab scrolls separately, so the position is kept when switching */
 
-/* Spis treści z lewej i dokumenty obok */
+/* Outline on the left, documents next to it */
 #workspace { display: flex; flex: 1; min-height: 0; }
 
 #docs {
@@ -287,7 +287,7 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
   min-height: 0;
 }
 
-/* Spis treści: szerokość zmieniana przeciągnięciem prawej krawędzi (--outline-width z app.js) */
+/* Outline: width changed by dragging the right edge (--outline-width from app.js) */
 #outline {
   position: relative;
   display: flex;
@@ -311,9 +311,9 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 
 .outline-header > span { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 
-/* Poziomy H1–H4: zaznaczone wszystkie pokazywane (H3 = H1, H2 i H3) */
+/* Levels H1–H4: all shown levels are highlighted (H3 = H1, H2 and H3) */
 #outline-levels { display: flex; flex: none; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-/* Stała szerokość: pogrubiony zaznaczony przycisk nie rozpycha grupy */
+/* Fixed width: a bold selected button does not widen the group */
 #outline-levels button { width: 28px; height: 22px; padding: 0; border: 0; background: none; color: var(--muted); font: 12px var(--font-ui); }
 #outline-levels button + button { border-left: 1px solid var(--border); }
 #outline-levels button:hover { color: var(--fg); }
@@ -345,14 +345,14 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #outline-list [data-rank="2"] { font-size: 14px; }
 #outline-list [data-rank="3"] { font-size: 13px; }
 #outline-list [data-rank="4"] { font-size: 12px; color: var(--muted); }
-/* Bieżący i pozostałe nagłówki widoczne na ekranie w tym samym kolorze */
+/* Current heading and the other on-screen headings in the same color */
 #outline-list button.current, #outline-list button.in-view { color: var(--link); }
-/* Jedna kreska z lewej wzdłuż wszystkich widocznych nagłówków (top i height z app.js) */
+/* A single bar on the left along all visible headings (top and height from app.js) */
 #outline-list { position: relative; }
 #outline-view { position: absolute; left: 6px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--link) 70%, transparent); pointer-events: none; }
 .outline-empty { padding: 8px; color: var(--muted); }
 
-/* Prawa krawędź panelu: podwójna linia, za którą się chwyta (6 px na chwyt, linie 1 px w odstępie 2 px) */
+/* Right edge of the panel: a double line to grab (6 px grip, 1 px lines 2 px apart) */
 #outline-resizer { position: absolute; top: 0; right: -6px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }
 #outline-resizer::before {
   content: "";
@@ -415,7 +415,7 @@ pre code { padding: 0; background: none; font-size: 100%; }
 
 blockquote { margin-left: 0; padding: 0 1em; color: var(--muted); border-left: .25em solid var(--border); }
 
-/* Alerty GitHub: > [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION] */
+/* GitHub alerts: > [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION] */
 .markdown-alert { margin: 0 0 16px; padding: 8px 16px; border-left: .25em solid var(--alert); }
 .markdown-alert > :last-child { margin-bottom: 0; }
 .markdown-alert-title { margin-bottom: 4px; color: var(--alert); font-weight: 600; }
@@ -442,7 +442,7 @@ img { max-width: 100%; }
 
 .error { padding: 32px 40px; color: #d1242f; }
 
-/* Instalator: małe okno z samym panelem (host wstawia data-installer do <html> od pierwszej klatki) */
+/* Installer: small window with just the panel (the host sets data-installer on <html> from the first frame) */
 :root[data-installer] #tabbar, :root[data-installer] #file-bars, :root[data-installer] #workspace { display: none; }
 :root[data-installer] #installer[hidden] { display: block !important; }
 
@@ -466,12 +466,12 @@ img { max-width: 100%; }
 .installer-buttons { display: flex; gap: 8px; margin-top: 8px; font-size: 13px; }
 .tool:disabled { opacity: .6; }
 
-/* Duży / binarny plik: komunikat zamiast treści */
+/* Large / binary file: a notice instead of the content */
 .notice { display: grid; place-items: center; gap: 12px; padding: 64px 40px; color: var(--muted); font: 14px/1.5 var(--font-ui); text-align: center; }
 .notice p { margin: 0; color: var(--fg); }
 .notice-buttons { display: flex; gap: 8px; font-size: 13px; }
 
-/* Rozszerzenia */
+/* Extensions */
 
 .markdown-body pre code.hljs { padding: 0; background: transparent; }
 
@@ -480,14 +480,14 @@ img { max-width: 100%; }
 .mermaid-diagram { margin: 0 0 16px; text-align: center; }
 .mermaid-diagram svg { max-width: 100%; height: auto; }
 
-/* Błędny diagram: kod z czerwoną kreską i napis pod nim, tylko przy włączonych diagramach */
+/* Invalid diagram: code with a red bar and a message below it, only when diagrams are on */
 .diagrams-on pre.mermaid-error { margin-bottom: 4px; border-left: 3px solid #d1242f; }
 .mermaid-error-message { display: none; margin: 0 0 16px; color: #d1242f; font: 12px/1.4 var(--font-ui); }
 .diagrams-on .mermaid-error-message { display: block; }
 :root[data-scheme="dark"] .mermaid-error-message { color: #f85149; }
 :root[data-scheme="dark"] .diagrams-on pre.mermaid-error { border-left-color: #f85149; }
 
-/* Pasek nad blokiem kodu: język i „Kopiuj”, doklejony do <pre> (nie zaznacza się) */
+/* Bar above a code block: language and "Copy", attached to <pre> (not selectable) */
 .code-header {
   display: flex;
   align-items: center;
@@ -504,25 +504,25 @@ img { max-width: 100%; }
 
 .code-header + pre { border-radius: 0 0 var(--code-radius) var(--code-radius); }
 .code-buttons { display: flex; gap: 2px; }
-/* „Zawijaj”: długie wiersze tego bloku łamią się zamiast przewijać w poziomie */
+/* "Wrap": long lines of this block wrap instead of scrolling horizontally */
 pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .code-header .tool { height: 22px; padding: 0 6px; border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
-/* Najechanie tylko na aktywne przyciski; włączony „Zawijaj” zostaje niebieski także pod kursorem */
+/* Hover only on enabled buttons; "Wrap" when on stays blue under the cursor too */
 .code-header .tool:hover:not(:disabled) { border-color: var(--border); color: var(--fg); }
 .code-header .tool[aria-pressed="true"], .code-header .tool[aria-pressed="true"]:hover { color: var(--link); }
 .code-header .tool:disabled { cursor: default; }
-/* Narysowany diagram zamiast kodu: pasek niepotrzebny */
+/* Rendered diagram instead of code: no bar needed */
 .code-header:has(+ .mermaid-diagram) { display: none; }
 
-/* Grupa przełączników spis / wzory / diagramy: sklejone przyciski jak „Edytuj ▾” */
+/* Outline / formulas / diagrams toggle group: joined buttons like "Edit ▾" */
 .button-group { display: flex; }
 .button-group > .tool { border-radius: 0; }
 .button-group > .tool:first-child { border-radius: 6px 0 0 6px; }
 .button-group > .tool:last-child { border-radius: 0 6px 6px 0; }
 .button-group > .tool + .tool { margin-left: -1px; }
 
-/* Trzy stany przełącznika: włączony (tło i ikona w kolorze linku), wyłączony (szara ikona, wzory i diagramy
-   przekreślone), niedostępny (ledwo widoczna ikona bez przekreślenia, bez reakcji) */
+/* Three toggle states: on (background and icon in the link color), off (gray icon, formulas and diagrams
+   crossed out), unavailable (barely visible icon without the slash, no response) */
 .tool.toggle { padding: 0 7px; }
 .tool.toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--link) 16%, var(--bg)); color: var(--link); }
 .tool.toggle[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--link) 24%, var(--bg)); }

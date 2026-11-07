@@ -1,5 +1,5 @@
-//! Ctrl+klik w link: pliki Markdown w karcie, strony w przeglądarce, inne pliki w Eksploratorze.
-//! Też „Pokaż w Eksploratorze / Total Commanderze” z menu karty.
+//! Ctrl+click on a link: Markdown files in a tab, web pages in the browser, other files in Explorer.
+//! Also "Show in Explorer / Total Commander" from the tab menu.
 
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -32,12 +32,12 @@ pub fn open(url: &str) {
     }
 }
 
-/// Eksplorator z zaznaczonym plikiem (też „Pokaż w Eksploratorze” z menu karty).
+/// Explorer with the file selected (also "Show in Explorer" from the tab menu).
 pub fn reveal(path: &Path) {
     let _ = Command::new("explorer.exe").raw_arg(format!("/select,\"{}\"", path.display())).spawn();
 }
 
-/// Total Commander, jeśli zainstalowany (katalog z wpisu instalatora Ghisler w rejestrze).
+/// Total Commander, if installed (directory from the Ghisler installer's registry entry).
 pub fn total_commander() -> Option<PathBuf> {
     [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE]
         .into_iter()
@@ -46,15 +46,15 @@ pub fn total_commander() -> Option<PathBuf> {
         .find(|exe| exe.exists())
 }
 
-/// Total Commander z kursorem na pliku: w już otwartym oknie (/O), w nowej zakładce (/T) aktywnego panelu
-/// (/S: /L to panel aktywny).
+/// Total Commander with the cursor on the file: in the already open window (/O), in a new tab (/T) of the
+/// active panel (/S: /L is the active panel).
 pub fn reveal_in_total_commander(path: &Path) {
     if let Some(exe) = total_commander() {
         let _ = Command::new(exe).args(["/O", "/T", "/S"]).raw_arg(format!("/L=\"{}\"", path.display())).spawn();
     }
 }
 
-/// Adres do pokazania lub skopiowania: dla plików lokalnych ścieżka, dla reszty adres bez zmian.
+/// Address to show or copy: the path for local files, the address unchanged for everything else.
 pub fn display(url: &str) -> String {
     match local_target(url) {
         Some((path, Some(anchor))) => format!("{}#{anchor}", path.display()),

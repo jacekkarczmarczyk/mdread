@@ -1,4 +1,4 @@
-//! Obserwacja otwartych plików: wątek co chwilę sprawdza datę i rozmiar, zmiany trafiają do okna.
+//! Watching open files: a thread polls date and size at short intervals, changes go to the window.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -10,11 +10,11 @@ use std::time::{Duration, SystemTime};
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::PostMessageW;
 
-/// Komunikat dla okna: w kolejce czekają zdarzenia z [`take_events`].
+/// Message for the window: events from [`take_events`] are waiting in the queue.
 pub const WM_APP_FILES_CHANGED: u32 = windows::Win32::UI::WindowsAndMessaging::WM_APP + 3;
 
 const INTERVAL: Duration = Duration::from_millis(400);
-/// Tyle kolejnych sprawdzeń bez pliku, zanim uznamy go za usunięty (zapis przez plik tymczasowy i podmianę).
+/// Consecutive checks without the file before it counts as deleted (saving via a temp file and a swap).
 const MISSING_CHECKS: u32 = 2;
 
 pub enum Event {
@@ -41,7 +41,7 @@ struct Watcher {
 
 static WATCHER: OnceLock<Watcher> = OnceLock::new();
 
-/// Uruchamia wątek obserwujący; zmiany sygnalizuje oknu `hwnd` komunikatem [`WM_APP_FILES_CHANGED`].
+/// Starts the watcher thread; it signals changes to window `hwnd` with the [`WM_APP_FILES_CHANGED`] message.
 pub fn start(hwnd: HWND) {
     let (sender, receiver) = channel();
     let watcher = WATCHER.get_or_init(|| Watcher { files: Mutex::default(), events: Mutex::new(None) });
@@ -70,7 +70,7 @@ pub fn unwatch(path: &Path) {
     }
 }
 
-/// Zdarzenia zebrane od ostatniego komunikatu (wywoływane w wątku okna).
+/// Events collected since the last message (called on the window thread).
 pub fn take_events() -> Vec<Event> {
     let Some(watcher) = WATCHER.get() else { return Vec::new() };
     let events = watcher.events.lock().unwrap();

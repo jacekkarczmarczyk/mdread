@@ -1,5 +1,5 @@
-//! Dokument powitalny / pomoc (`ui/help/<język>.md`) wbudowany w exe. Otwierany jako zwykła karta
-//! z kopii w `%APPDATA%\mdread\help`, więc działa jak każdy plik: sesja, pozycja czytania, edycja.
+//! Welcome / help document (`ui/help/<language>.md`) built into the exe. Opened as a regular tab
+//! from a copy in `%APPDATA%\mdread\help`, so it works like any file: session, reading position, editing.
 
 use std::path::PathBuf;
 
@@ -12,8 +12,8 @@ fn source(language: &str) -> &'static str {
     }
 }
 
-/// Zapisuje kopię pomocy w bieżącym języku (nadpisuje, gdy nowsza wersja programu ją zmieniła).
-/// Wołane też przy starcie, przed odtworzeniem kart, żeby karta pomocy z sesji pokazała aktualną treść.
+/// Writes a copy of the help in the current language (overwrites it when a newer program version changed it).
+/// Also called at startup, before tabs are restored, so a help tab from the session shows the current content.
 pub fn path() -> PathBuf {
     let language = i18n::current();
     let name = if language == "pl" { "MDRead — pomoc.md" } else { "MDRead — help.md" };

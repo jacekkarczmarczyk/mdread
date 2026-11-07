@@ -1,4 +1,4 @@
-//! Zasoby exe: ikona, manifest i wersja (Windows) oraz tabela plików UI z `ui/` (poza licencjami).
+//! Exe resources: icon, manifest and version (Windows), plus the table of UI files from `ui/` (except licenses).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,12 +17,12 @@ fn windows_resources() {
         .set("FileDescription", "MDRead - przeglądarka plików Markdown")
         .set("ProductName", "MDRead")
         .set("OriginalFilename", "mdread.exe");
-    resource.compile().expect("zasoby Windows (rc.exe z Windows SDK)");
+    resource.compile().expect("Windows resources (rc.exe from the Windows SDK)");
 }
 
 fn ui_assets() {
     println!("cargo:rerun-if-changed=ui");
-    let ui = fs::canonicalize("ui").expect("katalog ui");
+    let ui = fs::canonicalize("ui").expect("ui directory");
     let mut files = Vec::new();
     collect(&ui, &mut files);
     files.sort();

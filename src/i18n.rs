@@ -1,16 +1,16 @@
-//! Teksty interfejsu w językach z `ui/i18n/*.json`; te same słowniki dostaje strona (`strings.js`).
+//! Interface texts in the languages from `ui/i18n/*.json`; the page gets the same dictionaries (`strings.js`).
 
 use std::sync::{OnceLock, RwLock};
 
 use serde_json::{Map, Value, json};
 
-/// Ustawienia języka do wyboru w menu (`system` oznacza język interfejsu Windows).
+/// Language settings to choose from in the menu (`system` means the Windows display language).
 pub const SETTINGS: &[&str] = &["system", "en", "pl"];
 use windows::Win32::Globalization::GetUserDefaultUILanguage;
 
 use crate::settings;
 
-/// Języki interfejsu; pierwszy jest zapasowy, gdy brakuje tekstu albo języka systemu.
+/// Interface languages; the first is the fallback when a text or the system language is missing.
 pub const LANGUAGES: &[&str] = &["en", "pl"];
 
 const LANG_POLISH: u16 = 0x15;
@@ -24,10 +24,10 @@ fn dictionary(language: &str) -> &'static Map<String, Value> {
         "pl" => (&PL, include_str!("../ui/i18n/pl.json")),
         _ => (&EN, include_str!("../ui/i18n/en.json")),
     };
-    cell.get_or_init(|| serde_json::from_str(source).expect("słownik i18n"))
+    cell.get_or_init(|| serde_json::from_str(source).expect("i18n dictionary"))
 }
 
-/// Ustala język z ustawień (`system` → język interfejsu Windows).
+/// Sets the language from the settings (`system` → the Windows display language).
 pub fn init() {
     let language = match settings::language().as_str() {
         "system" => system_language(),
@@ -37,7 +37,7 @@ pub fn init() {
 }
 
 fn system_language() -> &'static str {
-    // Główny identyfikator języka to dolne 10 bitów LANGID.
+    // The primary language id is the low 10 bits of LANGID.
     if unsafe { GetUserDefaultUILanguage() } & 0x3FF == LANG_POLISH { "pl" } else { "en" }
 }
 
@@ -45,7 +45,7 @@ pub fn current() -> &'static str {
     *CURRENT.read().unwrap()
 }
 
-/// Kod języka dla WebView2 (np. wbudowane pozycje menu kontekstowego).
+/// Language code for WebView2 (e.g. the built-in context menu items).
 pub fn locale() -> &'static str {
     match current() {
         "pl" => "pl-PL",
@@ -61,13 +61,13 @@ pub fn t(key: &str) -> String {
         .to_owned()
 }
 
-/// Tekst z podstawieniami `{nazwa}`.
+/// Text with `{name}` substitutions.
 pub fn tf(key: &str, params: &[(&str, &str)]) -> String {
     params.iter().fold(t(key), |text, (name, value)| text.replace(&format!("{{{name}}}"), value))
 }
 
-/// `strings.js` ładowany przez stronę przed `app.js`: słownik bieżącego języka (z uzupełnieniem
-/// z zapasowego), sam język i ustawienie. Zmiana języka uruchamia aplikację od nowa (`crate::restart`).
+/// `strings.js` loaded by the page before `app.js`: the current language's dictionary (filled in
+/// from the fallback), the language itself and the setting. Changing the language restarts the app (`crate::restart`).
 pub fn strings_script() -> String {
     let mut strings = dictionary(LANGUAGES[0]).clone();
     strings.extend(dictionary(current()).clone());

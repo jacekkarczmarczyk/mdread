@@ -3,14 +3,14 @@ use std::path::{Path, PathBuf};
 use comrak::nodes::NodeValue;
 use comrak::{Arena, Options, format_html, parse_document};
 
-/// Pod tym adresem strona dostaje lokalne pliki (obrazki), a linki do plików niosą ścieżkę.
+/// Under this address the page gets local files (images), and links to files carry the path.
 pub const LOCAL_PREFIX: &str = "https://mdread.localhost/local/";
 
-/// Przedrostek identyfikatorów z dokumentu (ten sam w ui/app.js przy szukaniu kotwic).
+/// Prefix of ids from the document (the same one in ui/app.js when looking up anchors).
 const CONTENT_ID_PREFIX: &str = "user-content-";
 
-/// Renderuje Markdown; względne adresy linków i obrazków rozwiązuje względem `base_dir`.
-/// Surowy HTML z pliku zostaje, ale całość przechodzi przez [`sanitizer`].
+/// Renders Markdown; resolves relative link and image addresses against `base_dir`.
+/// Raw HTML from the file is kept, but everything goes through [`sanitizer`].
 pub fn render(source: &str, base_dir: &Path) -> String {
     let options = options();
     let arena = Arena::new();
@@ -27,8 +27,8 @@ pub fn render(source: &str, base_dir: &Path) -> String {
     sanitizer(base_dir.to_owned()).clean(&html).to_string()
 }
 
-/// Biała lista jak na GitHubie (domyślna ammonia: bez script, style, iframe, form, atrybutów on*,
-/// adresów javascript:/data:) plus to, czego potrzebuje wynik comrak i strona aplikacji.
+/// Allowlist like GitHub's (ammonia's default: no script, style, iframe, form, on* attributes,
+/// javascript:/data: addresses) plus what comrak's output and the app page need.
 fn sanitizer(base_dir: PathBuf) -> ammonia::Builder<'static> {
     let mut builder = ammonia::Builder::default();
     builder
@@ -39,11 +39,11 @@ fn sanitizer(base_dir: PathBuf) -> ammonia::Builder<'static> {
         ])
         .add_tag_attributes("input", ["type", "checked", "disabled"])
         .add_tag_attributes("details", ["open"])
-        // Identyfikatory z dokumentu (nagłówki, przypisy, surowy HTML) z przedrostkiem jak na GitHubie, żeby nie
-        // zderzyły się z elementami interfejsu (np. nagłówek „Tab menu” → id „tab-menu” łapał styl menu karty).
-        // Kotwice #x strona szuka pod CONTENT_ID_PREFIX + x.
+        // Ids from the document (headings, footnotes, raw HTML) get a prefix like on GitHub, so they don't clash
+        // with interface elements (e.g. the heading "Tab menu" → id "tab-menu" picked up the tab menu's style).
+        // The page looks up anchors #x under CONTENT_ID_PREFIX + x.
         .id_prefix(Some(CONTENT_ID_PREFIX))
-        // Względne adresy w surowym HTML (np. <img src="img/x.png">) tak samo jak w składni Markdown.
+        // Relative addresses in raw HTML (e.g. <img src="img/x.png">) the same way as in Markdown syntax.
         .attribute_filter(move |_element, attribute, value| match attribute {
             "src" | "href" => Some(local_url(value, &base_dir).map_or(value.into(), Into::into)),
             _ => Some(value.into()),
@@ -66,12 +66,12 @@ fn options() -> Options<'static> {
     ext.header_id_prefix = Some(String::new());
     options.render.github_pre_lang = true;
     options.render.sourcepos = true;
-    // Surowy HTML i wszystkie adresy przepuszcza comrak; czyści je dopiero ammonia.
+    // comrak lets raw HTML and all addresses through; only ammonia cleans them.
     options.render.r#unsafe = true;
     options
 }
 
-/// Adres pod [`LOCAL_PREFIX`] dla ścieżki w pliku; `None` dla kotwic i adresów z innym schematem.
+/// Address under [`LOCAL_PREFIX`] for a path in the file; `None` for anchors and addresses with another scheme.
 fn local_url(url: &str, base_dir: &Path) -> Option<String> {
     if url.is_empty() || url.starts_with('#') {
         return None;
@@ -93,7 +93,7 @@ fn local_url(url: &str, base_dir: &Path) -> Option<String> {
     Some(local)
 }
 
-/// Ścieżka z adresu `file:` (bez schematu): `///C:/x` i `C:/x` to dysk lokalny, `//serwer/udział/x` to UNC.
+/// Path from a `file:` address (no scheme): `///C:/x` and `C:/x` are a local drive, `//server/share/x` is UNC.
 fn file_url_path(rest: &str) -> PathBuf {
     let rest = percent_decode(rest);
     let path = match rest.strip_prefix("//") {
@@ -107,7 +107,7 @@ fn file_url_path(rest: &str) -> PathBuf {
     PathBuf::from(path.replace('/', "\\"))
 }
 
-/// Schemat adresu (`http`, `mailto`…). Jedna litera to dysk Windows (`C:`), nie schemat.
+/// Address scheme (`http`, `mailto`…). A single letter is a Windows drive (`C:`), not a scheme.
 fn scheme(url: &str) -> Option<&str> {
     let (scheme, _) = url.split_once(':')?;
     let valid = scheme.len() > 1
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn keeps_safe_raw_html() {
-        let html = html("<details><summary>Więcej</summary>\n\nTreść\n\n</details>\n\nH<sub>2</sub>O <kbd>Ctrl</kbd><br>");
+        let html = html("<details><summary>More</summary>\n\nContent\n\n</details>\n\nH<sub>2</sub>O <kbd>Ctrl</kbd><br>");
         for tag in ["<details", "<summary", "<sub>", "<kbd>", "<br"] {
             assert!(html.contains(tag), "{tag}: {html}");
         }
@@ -200,9 +200,9 @@ mod tests {
 
     #[test]
     fn keeps_app_markup() {
-        let html = html("# Tytuł\n\n- [x] zrobione\n\n$x$\n\n```mermaid\na\n```\n\n> [!NOTE]\n> uwaga\n\nprzypis[^1]\n\n[^1]: treść");
+        let html = html("# Café\n\n- [x] done\n\n$x$\n\n```mermaid\na\n```\n\n> [!NOTE]\n> note\n\nfootnote[^1]\n\n[^1]: text");
         for needed in [
-            "id=\"user-content-tytuł\"", "data-sourcepos", "type=\"checkbox\"", "data-math-style", "lang=\"mermaid\"",
+            "id=\"user-content-café\"", "data-sourcepos", "type=\"checkbox\"", "data-math-style", "lang=\"mermaid\"",
             "markdown-alert-note", "data-footnote-ref",
         ] {
             assert!(html.contains(needed), "{needed}: {html}");
@@ -218,8 +218,8 @@ mod tests {
 
     #[test]
     fn keeps_anchors_and_web_links() {
-        let html = html("[a](#tabela) [b](https://example.com/x) [c](mailto:a@b.pl)");
-        assert!(html.contains(r##"href="#tabela""##));
+        let html = html("[a](#table) [b](https://example.com/x) [c](mailto:a@b.pl)");
+        assert!(html.contains(r##"href="#table""##));
         assert!(html.contains(r#"href="https://example.com/x""#));
         assert!(html.contains(r#"href="mailto:a@b.pl""#));
     }
@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn decodes_what_it_encodes() {
-        let path = "C:/Users/Jacek/Mój plik #1.md";
+        let path = "C:/Users/Jacek/Café notes #1.md";
         assert_eq!(percent_decode(&percent_encode(path)), path);
     }
 }

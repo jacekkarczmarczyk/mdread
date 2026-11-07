@@ -1,6 +1,6 @@
-//! Ścieżki sieciowe (UNC, `\\serwer\udział\…`). Samo odczytanie pliku z cudzego serwera wysyła
-//! skrót hasła Windows (NTLM), więc obrazki z UNC ładujemy tylko z serwerów, z których użytkownik
-//! sam otworzył dokument.
+//! Network paths (UNC, `\\server\share\…`). Merely reading a file from someone else's server sends
+//! the Windows password hash (NTLM), so UNC images are loaded only from servers from which the user
+//! opened a document themselves.
 
 use std::cell::RefCell;
 use std::collections::HashSet;
@@ -10,7 +10,7 @@ thread_local! {
     static TRUSTED_HOSTS: RefCell<HashSet<String>> = RefCell::default();
 }
 
-/// Nazwa serwera ze ścieżki UNC (małymi literami); `None` dla ścieżek lokalnych.
+/// Server name from a UNC path (lowercase); `None` for local paths.
 pub fn host(path: &Path) -> Option<String> {
     match path.components().next()? {
         Component::Prefix(prefix) => match prefix.kind() {
@@ -23,14 +23,14 @@ pub fn host(path: &Path) -> Option<String> {
     }
 }
 
-/// Zapamiętuje serwer dokumentu otwartego przez użytkownika.
+/// Remembers the server of a document opened by the user.
 pub fn trust_document(path: &Path) {
     if let Some(host) = host(path) {
         TRUSTED_HOSTS.with_borrow_mut(|hosts| hosts.insert(host));
     }
 }
 
-/// Czy wolno samodzielnie (bez działania użytkownika) czytać plik spod tej ścieżki.
+/// Whether a file at this path may be read on our own (without a user action).
 pub fn may_read(path: &Path) -> bool {
     host(path).is_none_or(|host| TRUSTED_HOSTS.with_borrow(|hosts| hosts.contains(&host)))
 }

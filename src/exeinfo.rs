@@ -1,4 +1,4 @@
-//! Nazwa (opis z zasobów wersji) i ikona programu `.exe` do listy edytorów.
+//! Name (description from the version resources) and icon of an `.exe` program for the editor list.
 
 use std::path::Path;
 
@@ -11,7 +11,7 @@ use windows::Win32::UI::Shell::SHDefExtractIconW;
 use windows::Win32::UI::WindowsAndMessaging::{DestroyIcon, GetIconInfo, HICON, ICONINFO};
 use windows::core::{HSTRING, w};
 
-/// Opis pliku (`FileDescription`), np. „Notepad++ : a free (GNU) source code editor” albo „Visual Studio Code”.
+/// File description (`FileDescription`), e.g. "Notepad++ : a free (GNU) source code editor" or "Visual Studio Code".
 pub fn description(path: &Path) -> Option<String> {
     let file = HSTRING::from(path.as_os_str());
     unsafe {
@@ -40,13 +40,13 @@ pub fn description(path: &Path) -> Option<String> {
     }
 }
 
-/// Ikona programu jako PNG w adresie `data:` (bok `size` pikseli).
+/// Program icon as a PNG in a `data:` address (`size` pixels per side).
 pub fn icon_data_url(path: &Path, size: u32) -> Option<String> {
     let pixels = icon_pixels(path, size)?;
     Some(format!("data:image/png;base64,{}", base64(&png(size, size, &pixels))))
 }
 
-/// Piksele RGBA ikony.
+/// RGBA pixels of the icon.
 fn icon_pixels(path: &Path, size: u32) -> Option<Vec<u8>> {
     unsafe {
         let mut icon = HICON::default();
@@ -57,7 +57,7 @@ fn icon_pixels(path: &Path, size: u32) -> Option<Vec<u8>> {
                 bmiHeader: BITMAPINFOHEADER {
                     biSize: size_of::<BITMAPINFOHEADER>() as u32,
                     biWidth: size as i32,
-                    biHeight: -(size as i32), // od góry do dołu
+                    biHeight: -(size as i32), // top-down
                     biPlanes: 1,
                     biBitCount: 32,
                     biCompression: BI_RGB.0,
@@ -75,7 +75,7 @@ fn icon_pixels(path: &Path, size: u32) -> Option<Vec<u8>> {
         let _ = DeleteObject(HGDIOBJ(info.hbmMask.0));
         let _ = DestroyIcon(icon);
         let mut pixels = pixels?;
-        // Stare ikony bez kanału alfa: całość nieprzezroczysta.
+        // Old icons without an alpha channel: fully opaque.
         let has_alpha = pixels.chunks(4).any(|pixel| pixel[3] != 0);
         for pixel in pixels.chunks_mut(4) {
             pixel.swap(0, 2); // BGRA → RGBA
@@ -87,11 +87,11 @@ fn icon_pixels(path: &Path, size: u32) -> Option<Vec<u8>> {
     }
 }
 
-/// Minimalny PNG (RGBA, bez kompresji: bloki „stored” zlib) — ikony mają kilka KB.
+/// Minimal PNG (RGBA, uncompressed: zlib "stored" blocks) — icons are a few KB.
 fn png(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
     let mut raw = Vec::with_capacity(rgba.len() + height as usize);
     for row in rgba.chunks(width as usize * 4) {
-        raw.push(0); // filtr: brak
+        raw.push(0); // filter: none
         raw.extend_from_slice(row);
     }
     let mut zlib = vec![0x78, 0x01];
@@ -108,7 +108,7 @@ fn png(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
     let mut header = Vec::with_capacity(13);
     header.extend_from_slice(&width.to_be_bytes());
     header.extend_from_slice(&height.to_be_bytes());
-    header.extend_from_slice(&[8, 6, 0, 0, 0]); // 8 bitów, RGBA
+    header.extend_from_slice(&[8, 6, 0, 0, 0]); // 8 bits, RGBA
 
     let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
     for (kind, data) in [(b"IHDR", header.as_slice()), (b"IDAT", zlib.as_slice()), (b"IEND", &[][..])] {

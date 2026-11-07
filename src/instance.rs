@@ -1,4 +1,4 @@
-//! Jedna instancja: kolejne uruchomienia przekazują ścieżki do działającego okna przez WM_COPYDATA.
+//! Single instance: later launches pass their paths to the running window via WM_COPYDATA.
 
 use std::path::PathBuf;
 
@@ -12,20 +12,20 @@ use windows::core::w;
 
 use crate::window::CLASS_NAME;
 
-/// Znacznik w `COPYDATASTRUCT::dwData`, żeby nie brać obcych WM_COPYDATA za listę plików.
+/// Marker in `COPYDATASTRUCT::dwData`, so that foreign WM_COPYDATA isn't taken for a file list.
 pub const COPYDATA_OPEN: usize = 0x4D44_4F50;
 
-/// Zwraca `true`, gdy to pierwsza instancja. W przeciwnym razie przekazuje ścieżki
-/// do działającego okna i zwraca `false`.
+/// Returns `true` for the first instance. Otherwise passes the paths
+/// to the running window and returns `false`.
 pub fn claim(paths: &[PathBuf]) -> bool {
     unsafe {
-        // Uchwyt mutexu zostaje otwarty do końca procesu.
+        // The mutex handle stays open until the process ends.
         let created = CreateMutexW(None, false, w!("Local\\mdread.single-instance"));
         if created.is_err() || GetLastError() != ERROR_ALREADY_EXISTS {
             return true;
         }
     }
-    // Pierwsza instancja mogła jeszcze nie utworzyć okna (np. kilka plików otwartych naraz z Eksploratora).
+    // The first instance may not have created its window yet (e.g. several files opened at once from Explorer).
     for _ in 0..40 {
         if let Ok(hwnd) = unsafe { FindWindowW(CLASS_NAME, None) } {
             forward(hwnd, paths);
@@ -52,7 +52,7 @@ fn forward(hwnd: HWND, paths: &[PathBuf]) {
     }
 }
 
-/// Odczytuje ścieżki z WM_COPYDATA wysłanego przez [`forward`].
+/// Reads the paths from a WM_COPYDATA sent by [`forward`].
 pub fn received_paths(copy: &COPYDATASTRUCT) -> Option<Vec<PathBuf>> {
     if copy.dwData != COPYDATA_OPEN {
         return None;

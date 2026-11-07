@@ -1,5 +1,5 @@
-//! Edycja w zewnętrznym programie (mdread sam niczego nie edytuje): lista edytorów (Notatnik,
-//! wykryte w systemie, dodane ręcznie), wybór i uruchamianie.
+//! Editing in an external program (mdread itself edits nothing): the editor list (Notepad,
+//! detected in the system, added by hand), choosing and launching.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -13,7 +13,7 @@ use windows::core::{HSTRING, PCWSTR};
 use crate::i18n::{t, tf};
 use crate::{exeinfo, settings};
 
-/// Programy szukane w „App Paths” rejestru i w typowych miejscach instalacji.
+/// Programs looked up in the registry's "App Paths" and in typical install locations.
 const KNOWN_EDITORS: &[(&str, &[&str])] = &[
     ("notepad++.exe", &[r"%ProgramFiles%\Notepad++\notepad++.exe"]),
     (
@@ -26,18 +26,18 @@ const KNOWN_EDITORS: &[(&str, &[&str])] = &[
 ];
 
 thread_local! {
-    /// Ikony i nazwy programów (odczyt z pliku exe jest wolniejszy niż budowa menu).
+    /// Program icons and names (reading them from the exe is slower than building the menu).
     static DETAILS: RefCell<HashMap<PathBuf, (String, Option<String>)>> = RefCell::default();
 }
 
-/// Notatnik pełną ścieżką z katalogu systemowego, żeby nie uruchomić przypadkiem innego `notepad.exe`.
+/// Notepad by full path from the system directory, so that no other `notepad.exe` is launched by accident.
 fn notepad() -> PathBuf {
     let windows = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
     PathBuf::from(windows).join(r"System32\notepad.exe")
 }
 
-/// Program przycisku „Edytuj”: wybrany, bez wyboru Notatnik, a gdy Notatnik usunięto z listy, pierwszy
-/// z listy. `None` przy pustej liście (strona wtedy otwiera wybór programu).
+/// Program for the Edit button: the chosen one, Notepad if none is chosen, and the first on the list when
+/// Notepad was removed from it. `None` for an empty list (the page then opens the program picker).
 fn selected() -> Option<PathBuf> {
     settings::editor()
         .or_else(|| (!settings::notepad_hidden()).then(notepad))
@@ -52,13 +52,13 @@ pub fn open(path: &Path) {
     }
 }
 
-/// Wybiera edytor z listy (Notatnik zapisuje się jako brak wyboru).
+/// Chooses an editor from the list (Notepad is stored as no choice).
 pub fn select(program: &Path) {
     settings::set_editor((!same(program, &notepad())).then(|| program.to_owned()));
 }
 
-/// Edytory poza Notatnikiem. Przy pierwszym starcie lista powstaje z programów wykrytych w systemie
-/// (i edytora wybranego w starszej wersji); potem jest już tylko to, co zapisane w ustawieniach.
+/// Editors other than Notepad. On first start the list is built from programs detected in the system
+/// (and the editor chosen in an older version); after that it is only what the settings hold.
 fn editors() -> Vec<PathBuf> {
     if let Some(editors) = settings::editors() {
         return editors;
@@ -73,7 +73,7 @@ fn editors() -> Vec<PathBuf> {
     editors
 }
 
-/// Dopisuje program do listy i go wybiera (Notatnik wraca na listę, jeśli był usunięty).
+/// Adds a program to the list and chooses it (Notepad returns to the list if it was removed).
 pub fn add(program: &Path) {
     if same(program, &notepad()) {
         settings::set_notepad_hidden(false);
@@ -87,7 +87,7 @@ pub fn add(program: &Path) {
     select(program);
 }
 
-/// Usuwa program z listy (także Notatnik); jeśli był wybrany, „Edytuj” bierze Notatnik albo pierwszy z listy.
+/// Removes a program from the list (Notepad too); if it was chosen, Edit uses Notepad or the first on the list.
 pub fn remove(program: &Path) {
     if same(program, &notepad()) {
         settings::set_notepad_hidden(true);
@@ -101,8 +101,8 @@ pub fn remove(program: &Path) {
     }
 }
 
-/// Lista dla strony: Notatnik (jeśli nie usunięty) i zapisane edytory istniejące na dysku, z nazwą, ikoną
-/// i zaznaczeniem.
+/// List for the page: Notepad (unless removed) and the saved editors that exist on disk, with name, icon
+/// and selection.
 pub fn info() -> Value {
     let selected = selected();
     let programs = (!settings::notepad_hidden())
@@ -135,7 +135,7 @@ fn details(path: &Path) -> (String, Option<String>) {
     details
 }
 
-/// Edytory zainstalowane w systemie (bez Notatnika); sprawdzane tylko przy pierwszym starcie.
+/// Editors installed in the system (without Notepad); checked only on first start.
 fn detected() -> Vec<PathBuf> {
     KNOWN_EDITORS
         .iter()
@@ -149,12 +149,12 @@ fn detected() -> Vec<PathBuf> {
         .collect()
 }
 
-/// Ścieżka programu z „App Paths” (wpis tworzony przez instalatory, np. Notepad++).
+/// Program path from "App Paths" (an entry created by installers, e.g. Notepad++).
 fn app_path(root: HKEY, exe: &str) -> Option<PathBuf> {
     registry_path(root, &format!(r"Software\Microsoft\Windows\CurrentVersion\App Paths\{exe}"), None)
 }
 
-/// Ścieżka zapisana w rejestrze (wartość `value`, domyślna gdy `None`), bez otaczających cudzysłowów.
+/// Path stored in the registry (value `value`, the default one when `None`), without surrounding quotes.
 pub fn registry_path(root: HKEY, key: &str, value: Option<&str>) -> Option<PathBuf> {
     let key = HSTRING::from(key);
     let value = value.map(HSTRING::from);
@@ -168,7 +168,7 @@ pub fn registry_path(root: HKEY, key: &str, value: Option<&str>) -> Option<PathB
     Some(PathBuf::from(text.trim_matches('"')))
 }
 
-/// Rozwija `%ZMIENNA%` w ścieżce.
+/// Expands `%VARIABLE%` in a path.
 fn expand(path: &str) -> PathBuf {
     let mut result = String::new();
     let mut parts = path.split('%');
