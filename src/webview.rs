@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{assets, clipboard, editor, links, menu, settings, timing, window};
+use crate::{assets, clipboard, editor, links, menu, settings, timing, watcher, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -241,6 +241,16 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
         Some("link") => {
             if let Some(url) = message["url"].as_str() {
                 links::open(url);
+            }
+        }
+        Some("reload") => {
+            if let Some(path) = message["path"].as_str() {
+                crate::reload_path(Path::new(path));
+            }
+        }
+        Some("closed") => {
+            if let Some(path) = message["path"].as_str() {
+                watcher::unwatch(Path::new(path));
             }
         }
         Some("copyText") => clipboard::set_text(message["text"].as_str().unwrap_or_default()),

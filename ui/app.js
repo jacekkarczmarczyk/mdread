@@ -4,6 +4,7 @@ const host = window.chrome.webview;
 const tabsEl = document.getElementById('tabs');
 const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
+const fileBars = document.getElementById('file-bars');
 const editTools = document.getElementById('edit-tools');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
@@ -21,7 +22,7 @@ function post(message) {
 
 function openDocument({ path, title, html, error, anchor }) {
   const key = path.toLowerCase();
-  const existing = tabs.find((entry) => entry.key === key);
+  const existing = findTab(path);
   if (existing) {
     activate(existing);
     if (anchor) scrollToAnchor(existing, anchor);
@@ -32,17 +33,8 @@ function openDocument({ path, title, html, error, anchor }) {
   page.className = 'page';
   page.tabIndex = -1;
   page.hidden = true;
-  if (error) {
-    const box = document.createElement('p');
-    box.className = 'error';
-    box.textContent = `${path}: ${error}`;
-    page.append(box);
-  } else {
-    const doc = document.createElement('article');
-    doc.className = 'markdown-body';
-    doc.innerHTML = html;
-    page.append(doc);
-  }
+  const content = documentContent(path, html, error);
+  page.append(content);
   const hasMath = page.querySelector('[data-math-style]') !== null;
 
   const tab = document.createElement('div');
@@ -59,7 +51,7 @@ function openDocument({ path, title, html, error, anchor }) {
   closeButton.textContent = '×';
   tab.append(label, closeButton);
 
-  const entry = { path, key, title, tab, page, hasMath, mathOn: true, math: [] };
+  const entry = { path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null };
   tab.addEventListener('click', (event) => {
     if (event.target === closeButton) close(entry);
     else activate(entry);
@@ -82,12 +74,115 @@ function openDocument({ path, title, html, error, anchor }) {
   }
 }
 
+function documentContent(path, html, error) {
+  if (error) {
+    const box = document.createElement('p');
+    box.className = 'error';
+    box.textContent = `${path}: ${error}`;
+    return box;
+  }
+  const doc = document.createElement('article');
+  doc.className = 'markdown-body';
+  doc.innerHTML = html;
+  return doc;
+}
+
+function findTab(path) {
+  const key = path.toLowerCase();
+  return tabs.find((entry) => entry.key === key);
+}
+
+// Zmiany pliku na dysku: pasek nad dokumentem i kropka na karcie; treść zmienia się dopiero po „Odśwież”.
+
+// Ikony przycisków paska (obrys 16×16, kolor z tekstu przycisku).
+const ICONS = {
+  refresh: 'M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3',
+  ignore: 'M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4zM6.5 8a1.5 1.5 0 0 0 3 0M2.5 2.5l11 11',
+  close: 'M4 4l8 8M12 4l-8 8',
+  keep: 'M3 8.5l3 3 7-7',
+};
+
+function iconButton(label, icon, action) {
+  const button = Object.assign(document.createElement('button'), { type: 'button' });
+  button.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
+  button.append(label);
+  button.addEventListener('click', action);
+  return button;
+}
+
+function showFileBar(entry, kind) {
+  entry.bar?.remove();
+  const bar = document.createElement('div');
+  bar.className = `file-bar file-bar-${kind}`;
+  const text = document.createElement('span');
+  const buttons = kind === 'changed'
+    ? [iconButton('Odśwież', 'refresh', () => post({ type: 'reload', path: entry.path })),
+      iconButton('Ignoruj', 'ignore', () => hideFileBar(entry))]
+    : [iconButton('Zamknij kartę', 'close', () => close(entry)), iconButton('Zostaw', 'keep', () => hideFileBar(entry))];
+  text.textContent = kind === 'changed' ? 'Plik został zmieniony na dysku.' : 'Plik został usunięty z dysku.';
+  bar.append(text, ...buttons);
+  // Pasek leży nad obszarem przewijania, więc przesuwa dokument zamiast zasłaniać czytane miejsce.
+  bar.hidden = entry !== active;
+  fileBars.append(bar);
+  entry.bar = bar;
+  entry.tab.classList.add('stale');
+}
+
+function hideFileBar(entry) {
+  entry.bar?.remove();
+  entry.bar = null;
+  entry.tab.classList.remove('stale');
+}
+
+// Pozycja czytania: pierwszy widoczny blok (jego treść i wiersz źródła z data-sourcepos). Po odświeżeniu
+// wracamy do bloku o tej samej treści najbliżej dawnego wiersza, więc dopisane wyżej wiersze nie przesuwają
+// widoku; gdy takiego bloku już nie ma, do ostatniego bloku zaczynającego się nie dalej niż dawny wiersz.
+const blockLine = (block) => parseInt(block.dataset.sourcepos, 10);
+const blockSignature = (block) => block.tagName + block.textContent.slice(0, 120);
+
+function readingPosition(page) {
+  const top = page.getBoundingClientRect().top;
+  for (const block of page.querySelectorAll('.markdown-body > [data-sourcepos]')) {
+    const rect = block.getBoundingClientRect();
+    if (rect.bottom > top) return { line: blockLine(block), signature: blockSignature(block), offset: rect.top - top };
+  }
+  return null;
+}
+
+function restoreReadingPosition(page, position) {
+  if (!position) return;
+  const blocks = [...page.querySelectorAll('.markdown-body > [data-sourcepos]')];
+  const distance = (block) => Math.abs(blockLine(block) - position.line);
+  const same = blocks.filter((block) => blockSignature(block) === position.signature);
+  const target = same.length
+    ? same.reduce((best, block) => (distance(block) < distance(best) ? block : best))
+    : blocks.filter((block) => blockLine(block) <= position.line).at(-1);
+  if (target) page.scrollTop += target.getBoundingClientRect().top - page.getBoundingClientRect().top - position.offset;
+}
+
+function reloadDocument({ path, html, error }) {
+  const entry = findTab(path);
+  if (!entry) return;
+  const position = readingPosition(entry.page);
+  hideFileBar(entry);
+  const content = documentContent(path, html, error);
+  entry.content.replaceWith(content);
+  entry.content = content;
+  entry.math = [];
+  entry.hasMath = content.querySelector('[data-math-style]') !== null;
+  if (entry === active) showMathToggle(entry);
+  restoreReadingPosition(entry.page, position);
+  // Wzory i diagramy zmieniają wysokość bloków, więc po ich narysowaniu jeszcze raz.
+  enhance(entry).then(() => restoreReadingPosition(entry.page, position));
+}
+
 function activate(entry) {
   for (const other of tabs) {
     const isActive = other === entry;
     other.tab.classList.toggle('active', isActive);
     other.tab.setAttribute('aria-selected', String(isActive));
     other.page.hidden = !isActive;
+    if (other.bar) other.bar.hidden = !isActive;
   }
   active = entry;
   empty.hidden = true;
@@ -239,6 +334,8 @@ function close(entry) {
   tabs.splice(index, 1);
   entry.tab.remove();
   entry.page.remove();
+  entry.bar?.remove();
+  post({ type: 'closed', path: entry.path });
   if (tabs.length === 0) {
     post({ type: 'close' });
     return;
@@ -469,6 +566,11 @@ window.addEventListener('drop', (event) => {
 host.addEventListener('message', (event) => {
   const message = event.data;
   if (message.type === 'open') openDocument(message);
+  else if (message.type === 'reload') reloadDocument(message);
+  else if (message.type === 'fileChanged' || message.type === 'fileDeleted') {
+    const entry = findTab(message.path);
+    if (entry) showFileBar(entry, message.type === 'fileChanged' ? 'changed' : 'deleted');
+  }
   else if (message.type === 'editor') showEditor(message);
 });
 

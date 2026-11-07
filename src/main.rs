@@ -9,6 +9,7 @@ mod menu;
 mod markdown;
 mod settings;
 mod timing;
+mod watcher;
 mod webview;
 mod window;
 
@@ -39,6 +40,7 @@ fn main() {
 
     let hwnd = window::create().unwrap_or_else(|error| fatal(&format!("CreateWindow: {error}")));
     timing::mark("window shown");
+    watcher::start(hwnd);
 
     // Callback środowiska potrafi przyjść już w trakcie tworzenia okna, więc start dopiero, gdy HWND istnieje.
     if let Err(error) = webview::start(hwnd) {
@@ -62,18 +64,29 @@ pub fn open_paths(paths: &[PathBuf]) {
 /// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana.
 pub fn open_path(path: &Path, anchor: Option<&str>) {
     let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
-    webview::send(open_message(&path, anchor));
+    let mut message = document_message("open", &path);
+    message["anchor"] = json!(anchor);
+    if message.get("html").is_some() {
+        watcher::watch(&path);
+    }
+    webview::send(message);
 }
 
-fn open_message(path: &Path, anchor: Option<&str>) -> Value {
+/// Wczytuje plik ponownie do jego karty (po „Odśwież”).
+pub fn reload_path(path: &Path) {
+    watcher::watch(path);
+    webview::send(document_message("reload", path));
+}
+
+fn document_message(kind: &str, path: &Path) -> Value {
     let title = file_name(path);
     match read_source(path) {
         Ok(source) => {
             let html = markdown::render(&source, path.parent().unwrap_or(path));
             timing::mark("markdown rendered");
-            json!({ "type": "open", "path": path, "title": title, "html": html, "anchor": anchor })
+            json!({ "type": kind, "path": path, "title": title, "html": html })
         }
-        Err(error) => json!({ "type": "open", "path": path, "title": title, "error": error.to_string() }),
+        Err(error) => json!({ "type": kind, "path": path, "title": title, "error": error.to_string() }),
     }
 }
 

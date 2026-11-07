@@ -22,7 +22,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
-use crate::{editor, instance, settings, webview};
+use crate::{editor, instance, settings, watcher, webview};
 
 pub const CLASS_NAME: PCWSTR = w!("mdread.window");
 
@@ -200,6 +200,16 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 }
                 None => LRESULT(0),
             }
+        }
+        watcher::WM_APP_FILES_CHANGED => {
+            for event in watcher::take_events() {
+                let (kind, path) = match event {
+                    watcher::Event::Changed(path) => ("fileChanged", path),
+                    watcher::Event::Deleted(path) => ("fileDeleted", path),
+                };
+                webview::send(serde_json::json!({ "type": kind, "path": path }));
+            }
+            LRESULT(0)
         }
         WM_APP_OPEN_DIALOG => {
             if let Ok(paths) = show_open_dialog(hwnd, MARKDOWN_FILTERS, true) {
