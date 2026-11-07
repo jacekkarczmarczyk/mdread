@@ -335,6 +335,12 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 crate::reload_path(Path::new(path));
             }
         }
+        // Ctrl+Shift+T: a closed tab opened again (the page puts it back in its place).
+        Some("reopen") => {
+            if let Some(path) = message["path"].as_str() {
+                crate::open_paths(&[PathBuf::from(path)]);
+            }
+        }
         Some("closed") => {
             if let Some(path) = message["path"].as_str() {
                 watcher::unwatch(Path::new(path));

@@ -32,6 +32,8 @@ Pliki od 2 MB otwierają się po potwierdzeniu, a powyżej 20 MB tylko w edytorz
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>O</kbd> | otwórz plik |
 | <kbd>Ctrl</kbd>+<kbd>W</kbd> | zamknij kartę (albo środkowy przycisk myszy) |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> | przywróć zamkniętą kartę, kolejne naciśnięcia — wcześniejsze |
+| <kbd>Ctrl</kbd>+<kbd>R</kbd>, <kbd>F5</kbd> | wczytaj plik od nowa (także obrazki), w tym samym miejscu |
 | <kbd>Ctrl</kbd>+<kbd>Tab</kbd> | następna karta, z <kbd>Shift</kbd> poprzednia |
 | <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | karta nr 1–8, 9 to ostatnia |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | otwórz w edytorze |

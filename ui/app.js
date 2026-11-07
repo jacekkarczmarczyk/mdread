@@ -41,11 +41,14 @@ function post(message) {
 function openDocument({ path, title, html, error, anchor, notice, position }) {
   const key = path.toLowerCase();
   const existing = findTab(path);
+  const reopened = reopening.get(key);
+  reopening.delete(key);
   if (existing) {
     activate(existing);
     if (anchor) scrollToAnchor(existing, anchor);
     return;
   }
+  position ??= reopened?.position;
 
   const page = document.createElement('div');
   page.className = 'page';
@@ -89,9 +92,11 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   tab.addEventListener('contextmenu', (event) => showTabMenu(entry, event));
   tab.addEventListener('pointerdown', (event) => { if (event.button === 0 && event.target !== closeButton) dragTab(entry, event); });
 
-  tabsEl.append(tab);
+  // A reopened tab (Ctrl+Shift+T) goes back to its place.
+  const index = reopened ? Math.min(reopened.index, tabs.length) : tabs.length;
+  tabsEl.insertBefore(tab, tabs[index]?.tab ?? null);
   docs.append(page);
-  tabs.push(entry);
+  tabs.splice(index, 0, entry);
   activate(entry);
   updateRemoteBar(entry);
   if (anchor) scrollToAnchor(entry, anchor);
@@ -379,6 +384,13 @@ function reloadDocument({ path, html, error, notice }) {
   const position = readingPosition(entry.page);
   hideFileBar(entry);
   const content = documentContent(path, html, error, entry.remoteAllowed, notice);
+  // Local images load again under a fresh address: the browser would otherwise show its copy of a changed file.
+  const images = [...content.querySelectorAll(`img[src^="${LOCAL_PREFIX}"]`)];
+  for (const image of images) {
+    const url = new URL(image.src);
+    url.searchParams.set('reload', Date.now());
+    image.src = url;
+  }
   for (const pre of entry.content.querySelectorAll('pre')) codeWidths.unobserve(pre);
   entry.content.replaceWith(content);
   entry.content = content;
@@ -393,8 +405,14 @@ function reloadDocument({ path, html, error, notice }) {
     updateOutline();
   }
   restoreReadingPosition(entry.page, position);
-  // Formulas and diagrams change block heights, so once more after they are rendered.
-  enhance(entry).then(() => restoreReadingPosition(entry.page, position));
+  // Formulas, diagrams and images change block heights, so once more after they are rendered and loaded.
+  const loaded = images.map((image) => image.decode().catch(() => {}));
+  Promise.all([enhance(entry), ...loaded]).then(() => restoreReadingPosition(entry.page, position));
+}
+
+// Ctrl+R / F5: the active file read again, also when it has not changed (e.g. only its images have).
+function reloadActive() {
+  if (active?.path) post({ type: 'reload', path: active.path });
 }
 
 function activate(entry) {
@@ -634,6 +652,19 @@ function close(entry) {
   closeTabs([entry]);
 }
 
+// Closed tabs for Ctrl+Shift+T, the last one on top: path, place in the bar and reading position; and the ones
+// being reopened, by key, until the host sends them back.
+const closedTabs = [];
+const reopening = new Map();
+
+function reopenClosedTab() {
+  let closed;
+  do closed = closedTabs.pop(); while (closed && findTab(closed.path));
+  if (!closed) return;
+  reopening.set(closed.path.toLowerCase(), closed);
+  post({ type: 'reopen', path: closed.path });
+}
+
 // Closes tabs (one, or several from the tab menu) and saves the session once. Closing the last tab closes
 // the window like Notepad; "Close all" (keepWindow) leaves an empty window like VS Code.
 function closeTabs(list, keepWindow = false) {
@@ -641,6 +672,8 @@ function closeTabs(list, keepWindow = false) {
   for (const entry of list) {
     const index = tabs.indexOf(entry);
     if (index < 0) continue;
+    const position = entry === active ? readingPosition(entry.page) ?? entry.position : entry.position;
+    closedTabs.push({ path: entry.path, index, position });
     tabs.splice(index, 1);
     entry.tab.remove();
     for (const pre of entry.page.querySelectorAll('pre')) codeWidths.unobserve(pre);
@@ -751,13 +784,20 @@ window.addEventListener('keydown', (event) => {
     post({ type: 'help' });
     return;
   }
+  if (event.key === 'F5' && !event.altKey) {
+    event.preventDefault();
+    reloadActive();
+    return;
+  }
   if (!event.ctrlKey || event.altKey) return;
   const key = event.key.toLowerCase();
   let handled = true;
   if (key === 'c' && event.shiftKey) copySelectionAsText();
   else if (key === 'o' && event.shiftKey) toggleOutline();
+  else if (key === 't' && event.shiftKey) reopenClosedTab();
   else if (key === 'o') post({ type: 'openDialog' });
   else if (key === 'e') editActive();
+  else if (key === 'r') reloadActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
   else if (key === 'tab') cycle(event.shiftKey ? -1 : 1);
   else if (key === 'pagedown') cycle(1);

@@ -32,6 +32,8 @@ Files of 2 MB or more open after you confirm; above 20 MB they only open in the 
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>O</kbd> | open a file |
 | <kbd>Ctrl</kbd>+<kbd>W</kbd> | close the tab (or middle-click it) |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> | reopen a closed tab, press again for earlier ones |
+| <kbd>Ctrl</kbd>+<kbd>R</kbd>, <kbd>F5</kbd> | read the file again (images too), keeping your place |
 | <kbd>Ctrl</kbd>+<kbd>Tab</kbd> | next tab, with <kbd>Shift</kbd> previous |
 | <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | tab 1–8, 9 is the last one |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | open in the editor |
