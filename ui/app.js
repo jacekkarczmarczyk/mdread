@@ -19,11 +19,12 @@ function post(message) {
   host.postMessage(message);
 }
 
-function openDocument({ path, title, html, error }) {
+function openDocument({ path, title, html, error, anchor }) {
   const key = path.toLowerCase();
   const existing = tabs.find((entry) => entry.key === key);
   if (existing) {
     activate(existing);
+    if (anchor) scrollToAnchor(existing, anchor);
     return;
   }
 
@@ -70,6 +71,7 @@ function openDocument({ path, title, html, error }) {
   docs.append(page);
   tabs.push(entry);
   activate(entry);
+  if (anchor) scrollToAnchor(entry, anchor);
 
   if (firstRender) {
     firstRender = false;
@@ -90,7 +92,18 @@ function activate(entry) {
   tools.hidden = false;
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
-  post({ type: 'title', title: entry.title });
+  post({ type: 'active', path: entry.path, title: entry.title });
+}
+
+// Wywoływane z menu kontekstowego hosta.
+function selectAllInActive() {
+  if (!active) return;
+  getSelection().selectAllChildren(active.page);
+}
+
+function scrollToAnchor(entry, anchor) {
+  const id = CSS.escape(decodeURIComponent(anchor));
+  entry.page.querySelector(`[id="${id}"], [name="${id}"]`)?.scrollIntoView({ block: 'start' });
 }
 
 function close(entry) {
@@ -116,7 +129,8 @@ window.addEventListener('keydown', (event) => {
   if (!event.ctrlKey || event.altKey) return;
   const key = event.key.toLowerCase();
   let handled = true;
-  if (key === 'o') post({ type: 'openDialog' });
+  if (key === 'c' && event.shiftKey) post({ type: 'copyText', text: getSelection().toString() });
+  else if (key === 'o') post({ type: 'openDialog' });
   else if (key === 'e') editActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
   else if (key === 'tab') cycle(event.shiftKey ? -1 : 1);
@@ -162,6 +176,75 @@ editMenu.addEventListener('click', (event) => {
 document.addEventListener('click', () => toggleEditMenu(false));
 window.addEventListener('blur', () => toggleEditMenu(false));
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleEditMenu(false); });
+
+// Kopiowanie z formatowaniem: sam HTML zaznaczenia, bez stylów wyliczonych z motywu
+// (inaczej np. jasny tekst z ciemnego motywu trafiałby do Worda jako biały).
+document.addEventListener('copy', (event) => {
+  const selection = getSelection();
+  if (selection.isCollapsed) return;
+  const container = document.createElement('div');
+  for (let i = 0; i < selection.rangeCount; i++) container.append(selection.getRangeAt(i).cloneContents());
+  for (const element of container.querySelectorAll('[data-sourcepos]')) element.removeAttribute('data-sourcepos');
+  event.clipboardData.setData('text/html', container.innerHTML);
+  event.clipboardData.setData('text/plain', selection.toString());
+  event.preventDefault();
+});
+
+// Linki: zwykły klik tylko dla kotwic, resztę otwiera Ctrl+klik (host decyduje: karta, przeglądarka, Eksplorator).
+
+const LOCAL_PREFIX = 'https://mdread.localhost/local/';
+const linkTip = document.createElement('div');
+linkTip.id = 'link-tip';
+linkTip.hidden = true;
+document.body.append(linkTip);
+
+function linkAddress(link) {
+  const href = link.getAttribute('href');
+  if (href.startsWith('#')) return href;
+  if (!link.href.startsWith(LOCAL_PREFIX)) return link.href;
+  const [path, anchor] = link.href.slice(LOCAL_PREFIX.length).split('#');
+  return decodeURIComponent(path).replaceAll('/', '\\') + (anchor ? `#${decodeURIComponent(anchor)}` : '');
+}
+
+docs.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href]');
+  if (!link) return;
+  event.preventDefault();
+  const href = link.getAttribute('href');
+  if (href.startsWith('#')) scrollToAnchor(active, href.slice(1));
+  else if (event.ctrlKey) post({ type: 'link', url: link.href });
+});
+
+docs.addEventListener('mouseover', (event) => {
+  const link = event.target.closest('a[href]');
+  if (!link) return;
+  // Własny tooltip zamiast natywnego, żeby nie było dwóch naraz.
+  if (link.title) {
+    link.dataset.title = link.title;
+    link.removeAttribute('title');
+  }
+  const isAnchor = link.getAttribute('href').startsWith('#');
+  linkTip.replaceChildren();
+  if (link.dataset.title) linkTip.append(Object.assign(document.createElement('strong'), { textContent: link.dataset.title }));
+  linkTip.append(Object.assign(document.createElement('span'), { textContent: linkAddress(link) }));
+  if (!isAnchor) linkTip.append(Object.assign(document.createElement('small'), { textContent: 'Ctrl+klik, aby otworzyć' }));
+  linkTip.hidden = false;
+});
+
+docs.addEventListener('mousemove', (event) => {
+  if (linkTip.hidden) return;
+  const margin = 16;
+  const x = Math.min(event.clientX + margin, innerWidth - linkTip.offsetWidth - 4);
+  const y = event.clientY + margin + linkTip.offsetHeight > innerHeight
+    ? event.clientY - margin - linkTip.offsetHeight
+    : event.clientY + margin;
+  linkTip.style.transform = `translate(${Math.max(4, x)}px, ${y}px)`;
+});
+
+docs.addEventListener('mouseout', (event) => {
+  if (event.target.closest('a[href]') && !event.relatedTarget?.closest?.('a[href]')) linkTip.hidden = true;
+});
+docs.addEventListener('scroll', () => { linkTip.hidden = true; }, true);
 
 // Upuszczone pliki idą do hosta jako obiekty File (host odczyta z nich ścieżki); bez tego WebView nawigowałby do pliku.
 window.addEventListener('dragover', (event) => {

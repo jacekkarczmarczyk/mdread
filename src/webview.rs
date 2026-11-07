@@ -13,8 +13,8 @@ use webview2_com::Microsoft::Web::WebView2::Win32::{
 };
 use webview2_com::{
     CoTaskMemPWSTR, CreateCoreWebView2ControllerCompletedHandler,
-    CreateCoreWebView2EnvironmentCompletedHandler, WebMessageReceivedEventHandler,
-    WebResourceRequestedEventHandler,
+    CreateCoreWebView2EnvironmentCompletedHandler, ExecuteScriptCompletedHandler, NavigationStartingEventHandler,
+    NewWindowRequestedEventHandler, WebMessageReceivedEventHandler, WebResourceRequestedEventHandler,
 };
 use windows::Win32::Foundation::{E_POINTER, HWND, RECT};
 use windows::Win32::System::Com::IStream;
@@ -22,7 +22,8 @@ use windows::Win32::UI::Shell::SHCreateMemStream;
 use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
-use crate::{editor, settings, timing, window};
+use crate::markdown::{LOCAL_PREFIX, percent_decode};
+use crate::{clipboard, editor, links, menu, settings, timing, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -36,6 +37,7 @@ struct State {
     webview: Option<ICoreWebView2>,
     page_ready: bool,
     pending: Vec<String>,
+    active_path: Option<PathBuf>,
 }
 
 thread_local! {
@@ -72,6 +74,16 @@ pub fn send(message: Value) {
     }
 }
 
+/// Uruchamia skrypt na stronie bez czekania na wynik.
+pub fn execute(script: &str) {
+    if let Some(webview) = STATE.with_borrow(|state| state.webview.clone()) {
+        let handler = ExecuteScriptCompletedHandler::create(Box::new(|_, _| Ok(())));
+        unsafe {
+            let _ = webview.ExecuteScript(&HSTRING::from(script), &handler);
+        }
+    }
+}
+
 pub fn resize(hwnd: HWND) {
     if let Some(controller) = controller() {
         unsafe {
@@ -94,6 +106,16 @@ pub fn focus() {
             let _ = controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
         }
     }
+}
+
+/// Główne okno, jeśli już istnieje.
+pub fn window() -> Option<HWND> {
+    STATE.with_borrow(|state| (!state.hwnd.is_invalid()).then_some(state.hwnd))
+}
+
+/// Plik w aktywnej karcie.
+pub fn active_path() -> Option<PathBuf> {
+    STATE.with_borrow(|state| state.active_path.clone())
 }
 
 fn controller() -> Option<ICoreWebView2Controller> {
@@ -137,13 +159,36 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
         )?;
         let mut token = 0;
+        let env_for_resources = env.clone();
         webview.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(move |_, args| match args {
-                Some(args) => serve_resource(&env, &args),
+                Some(args) => serve_resource(&env_for_resources, &args),
                 None => Ok(()),
             })),
             &mut token,
         )?;
+        // Strona nigdy nie opuszcza index.html: linki obsługuje skrypt, a nowe okna są blokowane.
+        webview.add_NavigationStarting(
+            &NavigationStartingEventHandler::create(Box::new(|_, args| {
+                if let Some(args) = args {
+                    let mut uri = PWSTR::null();
+                    args.Uri(&mut uri)?;
+                    if !CoTaskMemPWSTR::from(uri).to_string().starts_with(ORIGIN) {
+                        args.SetCancel(true)?;
+                    }
+                }
+                Ok(())
+            })),
+            &mut token,
+        )?;
+        webview.add_NewWindowRequested(
+            &NewWindowRequestedEventHandler::create(Box::new(|_, args| match args {
+                Some(args) => args.SetHandled(true),
+                None => Ok(()),
+            })),
+            &mut token,
+        )?;
+        menu::attach(&webview, &env)?;
         webview.add_WebMessageReceived(
             &WebMessageReceivedEventHandler::create(Box::new(|_, args| {
                 if let Some(args) = args {
@@ -172,7 +217,17 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
 fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventArgs) {
     let hwnd = STATE.with_borrow(|state| state.hwnd);
     match message["type"].as_str() {
-        Some("title") => window::set_title(hwnd, message["title"].as_str()),
+        Some("active") => {
+            let path = message["path"].as_str().map(PathBuf::from);
+            STATE.with_borrow_mut(|state| state.active_path = path);
+            window::set_title(hwnd, message["title"].as_str());
+        }
+        Some("link") => {
+            if let Some(url) = message["url"].as_str() {
+                links::open(url);
+            }
+        }
+        Some("copyText") => clipboard::set_text(message["text"].as_str().unwrap_or_default()),
         Some("openDialog") => window::request_open_dialog(hwnd),
         Some("edit") => {
             if let Some(path) = message["path"].as_str() {
@@ -237,13 +292,37 @@ fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourc
         args.Request()?.Uri(&mut uri)?;
         CoTaskMemPWSTR::from(uri).to_string()
     };
-    let path = uri.strip_prefix(ORIGIN).unwrap_or_default();
-    let path = path.split(['?', '#']).next().unwrap_or_default();
-    let response = match asset(path) {
-        Some((body, mime)) => respond(env, Some(body), 200, "OK", mime)?,
-        None => respond(env, None, 404, "Not Found", "text/plain")?,
+    let uri = uri.split(['?', '#']).next().unwrap_or_default();
+    let response = if let Some(local) = uri.strip_prefix(LOCAL_PREFIX) {
+        match local_image(local) {
+            Some((body, mime)) => respond(env, Some(&body), 200, "OK", mime)?,
+            None => respond(env, None, 404, "Not Found", "text/plain")?,
+        }
+    } else {
+        match asset(uri.strip_prefix(ORIGIN).unwrap_or_default()) {
+            Some((body, mime)) => respond(env, Some(body), 200, "OK", mime)?,
+            None => respond(env, None, 404, "Not Found", "text/plain")?,
+        }
     };
     unsafe { args.SetResponse(&response) }
+}
+
+/// Obrazek z dysku dla `<img>` w dokumencie. Inne typy plików nie są serwowane.
+fn local_image(encoded_path: &str) -> Option<(Vec<u8>, &'static str)> {
+    let path = PathBuf::from(percent_decode(encoded_path));
+    let extension = path.extension()?.to_str()?.to_ascii_lowercase();
+    let mime = match extension.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        "webp" => "image/webp",
+        "avif" => "image/avif",
+        "bmp" => "image/bmp",
+        "ico" => "image/x-icon",
+        _ => return None,
+    };
+    Some((std::fs::read(path).ok()?, mime))
 }
 
 fn respond(

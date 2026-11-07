@@ -1,7 +1,10 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![windows_subsystem = "windows"]
 
+mod clipboard;
 mod editor;
 mod instance;
+mod links;
+mod menu;
 mod markdown;
 mod settings;
 mod timing;
@@ -51,31 +54,43 @@ fn main() {
 /// Otwiera pliki w kartach (strona przełącza na już otwartą kartę tego samego pliku).
 pub fn open_paths(paths: &[PathBuf]) {
     for path in paths {
-        webview::send(open_message(path));
+        open_path(path, None);
     }
 }
 
-fn open_message(path: &Path) -> Value {
+/// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana.
+pub fn open_path(path: &Path, anchor: Option<&str>) {
+    let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
+    webview::send(open_message(&path, anchor));
+}
+
+fn open_message(path: &Path, anchor: Option<&str>) -> Value {
     let title = file_name(path);
-    match std::fs::read(path) {
-        Ok(bytes) => {
-            let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes);
-            let source = String::from_utf8_lossy(bytes);
-            let html = markdown::render(&source);
+    match read_source(path) {
+        Ok(source) => {
+            let html = markdown::render(&source, path.parent().unwrap_or(path));
             timing::mark("markdown rendered");
-            json!({ "type": "open", "path": path, "title": title, "html": html })
+            json!({ "type": "open", "path": path, "title": title, "html": html, "anchor": anchor })
         }
         Err(error) => json!({ "type": "open", "path": path, "title": title, "error": error.to_string() }),
     }
+}
+
+/// Treść pliku jako tekst (UTF-8, bez BOM).
+pub fn read_source(path: &Path) -> std::io::Result<String> {
+    let bytes = std::fs::read(path)?;
+    let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes);
+    Ok(String::from_utf8_lossy(bytes).into_owned())
 }
 
 fn file_name(path: &Path) -> String {
     path.file_name().unwrap_or(path.as_os_str()).to_string_lossy().into_owned()
 }
 
+/// Komunikat błędu nad oknem aplikacji (albo samodzielny, jeśli okna jeszcze nie ma).
 pub fn show_error(message: &str) {
     unsafe {
-        MessageBoxW(None, &HSTRING::from(message), w!("mdread"), MB_ICONERROR);
+        MessageBoxW(webview::window(), &HSTRING::from(message), w!("mdread"), MB_ICONERROR);
     }
 }
 
