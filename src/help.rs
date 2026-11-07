@@ -13,7 +13,8 @@ fn source(language: &str) -> &'static str {
 }
 
 /// Zapisuje kopię pomocy w bieżącym języku (nadpisuje, gdy nowsza wersja programu ją zmieniła).
-fn path() -> PathBuf {
+/// Wołane też przy starcie, przed odtworzeniem kart, żeby karta pomocy z sesji pokazała aktualną treść.
+pub fn path() -> PathBuf {
     let language = i18n::current();
     let name = if language == "pl" { "MDRead — pomoc.md" } else { "MDRead — help.md" };
     let dir = PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join("mdread").join("help");

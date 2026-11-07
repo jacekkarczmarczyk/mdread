@@ -3,10 +3,27 @@
 Przeglądarka plików Markdown. Plików nie edytuje: przycisk **Edytuj** otwiera plik w innym programie.
 Tę stronę otworzysz ponownie przyciskiem **?** albo klawiszem <kbd>F1</kbd>.
 
-## Otwieranie
+## Pliki i karty
+
+### Otwieranie
 
 Plik `.md` otworzysz dwuklikiem (gdy MDRead jest domyślnym programem), przez <kbd>Ctrl</kbd>+<kbd>O</kbd>
 albo przeciągając go do okna. Każdy plik dostaje kartę. Przy następnym uruchomieniu karty wracają.
+
+### Układanie kart
+
+Kolejność kart zmienia się, przeciągając kartę myszą. Gdy kart jest dużo, pasek przewija się kółkiem,
+a strzałka **⌄** obok **+** pokazuje listę wszystkich kart z folderem każdego pliku.
+
+### Menu karty
+
+Prawy przycisk na karcie zamyka ją, pozostałe, te po lewej lub prawej albo wszystkie.
+Stamtąd też pokażesz plik w Eksploratorze albo w Total Commanderze, jeśli jest zainstalowany.
+
+### Zmiany na dysku
+
+Gdy plik zmieni się na dysku, nad treścią pojawi się pasek z przyciskiem **Odśwież**.
+Pliki od 2 MB otwierają się po potwierdzeniu, a powyżej 20 MB tylko w edytorze.
 
 ## Skróty
 
@@ -23,22 +40,28 @@ albo przeciągając go do okna. Każdy plik dostaje kartę. Przy następnym uruc
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | kopiuj sam tekst |
 | <kbd>Ctrl</kbd>+kółko, <kbd>Ctrl</kbd>+<kbd>0</kbd> | powiększenie, powrót do 100% |
 
-## Kopiowanie
+## Czytanie
 
-Ctrl+C zachowuje pogrubienia, listy i tabele, ale nie przenosi kolorów motywu, więc po wklejeniu do Worda
-czy Teams tekst ma zwykłe kolory. Wzory kopiują się jako źródło, np. `$E = mc^2$`.
-Pod prawym przyciskiem myszy jest też kopiowanie źródła Markdown całego pliku.
+### Spis treści
 
-## Linki
+Panel z lewej pokazuje nagłówki pliku. Kliknięcie przenosi do nagłówka, a nagłówki widoczne
+na ekranie są zaznaczone. H1–H4 ustawia, do którego poziomu sięga lista. Szerokość panelu
+zmienisz, przeciągając jego krawędź.
+
+### Linki
 
 Adres widać po najechaniu na link. Otwiera się go z <kbd>Ctrl</kbd>: strony w przeglądarce,
 pliki `.md` w nowej karcie, inne pliki w Eksploratorze. Odnośniki do nagłówków działają zwykłym kliknięciem.
 
-## Wzory i diagramy
+### Wzory
 
 $$
 \sum_{k=1}^{n} k = \frac{n(n+1)}{2}
 $$
+
+Jeśli `$` w tekście oznacza cenę, a nie wzór, przycisk **Σ** na pasku przełącza na tekst źródłowy.
+
+### Diagramy
 
 ```mermaid
 flowchart LR
@@ -46,15 +69,33 @@ flowchart LR
 ```
 
 Diagramy (bloki `mermaid`) są najpierw pokazane jako kod. Rysuje je przycisk z ikoną schematu na pasku,
-a drugie kliknięcie wraca do kodu. Jeśli `$` w tekście oznacza cenę, a nie wzór, przycisk **Σ** przełącza
-na tekst źródłowy. Przekreślona ikona znaczy, że dana opcja jest wyłączona.
+a drugie kliknięcie wraca do kodu. Przekreślona ikona znaczy, że dana opcja jest wyłączona.
 
-## Inne
+### Obrazki z internetu
 
-- Spis treści otwiera się z lewej. H1–H4 wybiera, do którego poziomu nagłówków pokazywać listę,
-  a krawędź panelu można przeciągnąć.
-- **Edytuj ▾** pozwala wybrać program do edycji albo dodać własny.
-- Gdy plik zmieni się na dysku, nad treścią pojawi się pasek z przyciskiem **Odśwież**.
-- Zębatka: motyw (jasny, ciemny albo jak w systemie) i język.
-- Obrazki z internetu wczytują się dopiero po kliknięciu. Inaczej autor pliku mógłby sprawdzić, kiedy go otworzyłeś.
-- Pliki od 2 MB otwierają się po potwierdzeniu, a powyżej 20 MB tylko w edytorze.
+Wczytują się dopiero po kliknięciu. Inaczej autor pliku mógłby sprawdzić, kiedy plik został otwarty.
+
+## Kopiowanie
+
+### Zaznaczenie
+
+Ctrl+C zachowuje pogrubienia, listy i tabele, ale nie przenosi kolorów motywu, więc po wklejeniu do Worda
+czy Teams tekst ma zwykłe kolory. Wzory kopiują się jako źródło, np. `$E = mc^2$`.
+
+### Bloki kodu
+
+Nad każdym blokiem kodu jest przycisk **Kopiuj**, który bierze sam kod.
+
+### Cały plik
+
+Pod prawym przyciskiem myszy jest kopiowanie źródła Markdown całego pliku.
+
+## Ustawienia
+
+### Zębatka
+
+Motyw (jasny, ciemny albo jak w systemie), język i to, czy nowe pliki otwierają się ze spisem treści.
+
+### Edytor
+
+**Edytuj ▾** pozwala wybrać program do edycji albo dodać własny.

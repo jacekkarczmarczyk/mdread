@@ -104,6 +104,7 @@ fn main() {
     // Pozycja „Pokaż w Total Commanderze” w menu karty tylko, gdy jest zainstalowany.
     webview::send(json!({ "type": "totalCommander", "available": links::total_commander().is_some() }));
     if !installer {
+        help::path();
         restore_session();
     }
     open_paths(&paths);

@@ -3,10 +3,27 @@
 A Markdown file viewer. It doesn't edit files: the **Edit** button opens the file in another program.
 You can come back to this page with the **?** button or <kbd>F1</kbd>.
 
-## Opening files
+## Files and tabs
+
+### Opening files
 
 Double-click a `.md` file (once MDRead is the default program), press <kbd>Ctrl</kbd>+<kbd>O</kbd>
 or drag the file onto the window. Each file gets a tab. Tabs come back the next time you start MDRead.
+
+### Arranging tabs
+
+Drag a tab to change the order. With many tabs open, the mouse wheel scrolls the tab bar,
+and the **⌄** arrow next to **+** lists all tabs together with each file's folder.
+
+### Tab menu
+
+Right-click a tab to close it, the other tabs, the ones to its left or right, or all of them.
+The same menu shows the file in Explorer, or in Total Commander if it is installed.
+
+### Changes on disk
+
+When the file changes on disk, a bar with a **Reload** button shows up above the text.
+Files of 2 MB or more open after you confirm; above 20 MB they only open in the editor.
 
 ## Shortcuts
 
@@ -23,22 +40,27 @@ or drag the file onto the window. Each file gets a tab. Tabs come back the next 
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | copy text only |
 | <kbd>Ctrl</kbd>+wheel, <kbd>Ctrl</kbd>+<kbd>0</kbd> | zoom, back to 100% |
 
-## Copying
+## Reading
 
-Ctrl+C keeps bold text, lists and tables but not the theme colours, so text pasted into Word or Teams
-has normal colours. Formulas are copied as source, e.g. `$E = mc^2$`.
-The right-click menu can also copy the Markdown source of the whole file.
+### Outline
 
-## Links
+The panel on the left lists the file's headings. Click one to jump to it; headings currently on screen
+are marked. H1–H4 sets how deep the list goes. Drag the panel's edge to change its width.
+
+### Links
 
 Hover a link to see where it goes. Open it with <kbd>Ctrl</kbd>+click: web pages in your browser,
 `.md` files in a new tab, other files in Explorer. Links to headings work with a normal click.
 
-## Formulas and diagrams
+### Formulas
 
 $$
 \sum_{k=1}^{n} k = \frac{n(n+1)}{2}
 $$
+
+If a `$` in the text is a price rather than a formula, the **Σ** button switches to the source text.
+
+### Diagrams
 
 ```mermaid
 flowchart LR
@@ -46,15 +68,33 @@ flowchart LR
 ```
 
 Diagrams (`mermaid` blocks) are first shown as code. The button with the diagram icon draws them,
-and a second click goes back to the code. If a `$` in the text is a price rather than a formula, the **Σ**
-button switches to the source text. A crossed-out icon means the option is off.
+and a second click goes back to the code. A crossed-out icon means the option is off.
 
-## Other things
+### Images from the internet
 
-- The outline opens on the left. H1–H4 sets how deep the list of headings goes,
-  and you can drag the panel's edge.
-- **Edit ▾** lets you pick the editing program or add your own.
-- When the file changes on disk, a bar with a **Reload** button shows up above the text.
-- The gear button: theme (light, dark or same as Windows) and language.
-- Images from the internet load only after you click them. Otherwise the author of the file could tell when you opened it.
-- Files of 2 MB or more open after you confirm; above 20 MB they only open in the editor.
+They load only after you click them. Otherwise the author of the file could tell when it was opened.
+
+## Copying
+
+### Selection
+
+Ctrl+C keeps bold text, lists and tables but not the theme colours, so text pasted into Word or Teams
+has normal colours. Formulas are copied as source, e.g. `$E = mc^2$`.
+
+### Code blocks
+
+Each code block has a **Copy** button that copies the code without the rest of the page.
+
+### Whole file
+
+The right-click menu can copy the Markdown source of the whole file.
+
+## Settings
+
+### Gear menu
+
+Theme (light, dark or same as Windows), language and whether new files open with the outline.
+
+### Editor
+
+**Edit ▾** lets you pick the editing program or add your own.
