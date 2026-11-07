@@ -344,7 +344,12 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #outline-list [data-rank="2"] { font-size: 14px; }
 #outline-list [data-rank="3"] { font-size: 13px; }
 #outline-list [data-rank="4"] { font-size: 12px; color: var(--muted); }
-#outline-list button.current { color: var(--link); box-shadow: inset 2px 0 var(--link); }
+#outline-list button.current { color: var(--link); }
+/* Pozostałe nagłówki widoczne na ekranie: delikatniej niż bieżący */
+#outline-list button.in-view { color: color-mix(in srgb, var(--link) 45%, var(--fg)); }
+/* Jedna kreska z lewej wzdłuż wszystkich widocznych nagłówków (top i height z app.js) */
+#outline-list { position: relative; }
+#outline-view { position: absolute; left: 6px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--link) 70%, transparent); pointer-events: none; }
 .outline-empty { padding: 8px; color: var(--muted); }
 
 #outline-resizer { position: absolute; top: 0; right: -3px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }

@@ -941,6 +941,8 @@ const outlineList = document.getElementById('outline-list');
 const outlineLevels = document.getElementById('outline-levels');
 const outlineResizer = document.getElementById('outline-resizer');
 
+const outlineView = Object.assign(document.createElement('div'), { id: 'outline-view', hidden: true });
+
 // Poziom dla nowo otwieranych kart: ostatnio wybrany, tylko do zamknięcia programu.
 let outlineDepth = 3;
 // Czy nowo otwierane karty mają od razu otwarty panel (settings.json przez atrybut <html>, domyślnie tak);
@@ -993,16 +995,32 @@ function updateOutline() {
   markCurrentHeading();
 }
 
-// Podświetlony nagłówek sekcji, którą właśnie widać (ostatni nagłówek nad górną krawędzią strony).
+// Podświetlony nagłówek sekcji, którą właśnie widać (ostatni nagłówek nad górną krawędzią strony), i delikatniej
+// pozostałe nagłówki widoczne na ekranie.
 function markCurrentHeading() {
   if (outline.hidden || !active) return;
-  const top = active.page.getBoundingClientRect().top + 8;
+  const page = active.page.getBoundingClientRect();
+  const top = page.top + 8;
   let current = outlineItems[0];
   for (const entry of outlineItems) {
     if (entry.heading.getBoundingClientRect().top <= top) current = entry;
     else break;
   }
-  for (const { item } of outlineItems) item.classList.toggle('current', item === current?.item);
+  for (const { heading, item } of outlineItems) {
+    const position = heading.getBoundingClientRect();
+    item.classList.toggle('current', item === current?.item);
+    item.classList.toggle('in-view', item !== current?.item && position.bottom > page.top && position.top < page.bottom);
+  }
+  // Jedna kreska z lewej od bieżącego do ostatniego widocznego nagłówka (pozycje są kolejne na liście).
+  const marked = outlineItems.filter(({ item }) => item.classList.contains('current') || item.classList.contains('in-view'));
+  outlineView.hidden = !marked.length;
+  if (marked.length) {
+    const first = marked[0].item;
+    const last = marked.at(-1).item;
+    outlineView.style.top = `${first.offsetTop}px`;
+    outlineView.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
+    outlineList.append(outlineView);
+  }
   current?.item.scrollIntoView({ block: 'nearest' });
 }
 
