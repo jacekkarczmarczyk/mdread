@@ -40,6 +40,12 @@
   "file.closeTab": "Close tab",
   "file.keep": "Keep",
 
+  "notice.large": "The file is {megabytes} MB — opening it will take about {seconds} s.",
+  "notice.tooLarge": "The file is {megabytes} MB — too large to preview (limit {limit} MB).",
+  "notice.binary": "This does not look like a text file.",
+  "notice.open": "Open",
+  "notice.openInEditor": "Open in editor",
+
   "link.ctrlClick": "Ctrl+click to open",
   "load.failed": "Could not load {src}",
   "mermaid.error": "Diagram error: {message}",

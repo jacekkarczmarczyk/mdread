@@ -40,6 +40,12 @@
   "file.closeTab": "Zamknij kartę",
   "file.keep": "Zostaw",
 
+  "notice.large": "Plik ma {megabytes} MB — otwieranie potrwa około {seconds} s.",
+  "notice.tooLarge": "Plik ma {megabytes} MB — to za dużo do podglądu (limit {limit} MB).",
+  "notice.binary": "To nie wygląda na plik tekstowy.",
+  "notice.open": "Otwórz",
+  "notice.openInEditor": "Otwórz w edytorze",
+
   "link.ctrlClick": "Ctrl+klik, aby otworzyć",
   "load.failed": "Nie udało się wczytać {src}",
   "mermaid.error": "Błąd diagramu: {message}",

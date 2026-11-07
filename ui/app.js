@@ -35,7 +35,7 @@ function post(message) {
   host.postMessage(message);
 }
 
-function openDocument({ path, title, html, error, anchor }) {
+function openDocument({ path, title, html, error, anchor, notice }) {
   const key = path.toLowerCase();
   const existing = findTab(path);
   if (existing) {
@@ -48,7 +48,7 @@ function openDocument({ path, title, html, error, anchor }) {
   page.className = 'page';
   page.tabIndex = -1;
   page.hidden = true;
-  const content = documentContent(path, html, error, false);
+  const content = documentContent(path, html, error, false, notice);
   page.append(content);
   const hasMath = page.querySelector('[data-math-style]') !== null;
 
@@ -98,7 +98,27 @@ function openDocument({ path, title, html, error, anchor }) {
 // przenosimy do data-remote-src, a pasek w karcie pozwala go wczytać.
 const isRemote = (src) => /^https?:/i.test(src) && !src.startsWith(LOCAL_ORIGIN);
 
-function documentContent(path, html, error, allowRemote) {
+// Zamiast treści: duży plik (pytanie), za duży albo binarny (tylko edytor). Progi liczy host.
+function noticeContent(path, { kind, megabytes, limit }) {
+  const box = document.createElement('div');
+  box.className = 'notice';
+  const text = document.createElement('p');
+  const size = megabytes.toLocaleString(I18N.language, { maximumFractionDigits: 1 });
+  text.textContent = t(`notice.${kind}`, { megabytes: size, limit, seconds: Math.max(1, Math.round(megabytes)) });
+  const buttons = document.createElement('div');
+  buttons.className = 'notice-buttons';
+  if (kind === 'large') {
+    const open = iconButton(t('notice.open'), 'open', () => post({ type: 'reload', path }));
+    open.classList.add('primary');
+    buttons.append(open);
+  }
+  buttons.append(iconButton(t('notice.openInEditor'), 'edit', () => post({ type: 'edit', path })));
+  box.append(text, buttons);
+  return box;
+}
+
+function documentContent(path, html, error, allowRemote, notice) {
+  if (notice) return noticeContent(path, notice);
   if (error) {
     const box = document.createElement('p');
     box.className = 'error';
@@ -211,6 +231,8 @@ const ICONS = {
   close: 'M4 4l8 8M12 4l-8 8',
   keep: 'M3 8.5l3 3 7-7',
   image: 'M2.5 3.5h11v9h-11zM2.5 10.5l3-3 3 3 2-2 3 3M10.5 6.5h.01',
+  open: 'M3.5 2.5h6l3 3v8h-9zM9.5 2.5v3h3',
+  edit: 'M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3',
 };
 
 function iconButton(label, icon, action) {
@@ -272,12 +294,12 @@ function restoreReadingPosition(page, position) {
   if (target) page.scrollTop += target.getBoundingClientRect().top - page.getBoundingClientRect().top - position.offset;
 }
 
-function reloadDocument({ path, html, error }) {
+function reloadDocument({ path, html, error, notice }) {
   const entry = findTab(path);
   if (!entry) return;
   const position = readingPosition(entry.page);
   hideFileBar(entry);
-  const content = documentContent(path, html, error, entry.remoteAllowed);
+  const content = documentContent(path, html, error, entry.remoteAllowed, notice);
   entry.content.replaceWith(content);
   entry.content = content;
   updateRemoteBar(entry);

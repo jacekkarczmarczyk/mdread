@@ -136,11 +136,20 @@ pub fn open_paths(paths: &[PathBuf]) {
     }
 }
 
-/// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana.
+/// Od tego rozmiaru karta najpierw pyta (pomiar: ~1 s otwierania na każdy MB, MDR-19).
+const WARN_SIZE: u64 = 2 * 1024 * 1024;
+/// Od tego rozmiaru podgląd odmawia i proponuje edytor.
+const MAX_SIZE: u64 = 20 * 1024 * 1024;
+
+/// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana. Duży albo binarny plik
+/// dostaje zamiast treści komunikat z wyborem (patrz [`notice`]).
 pub fn open_path(path: &Path, anchor: Option<&str>) {
     let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
     unc::trust_document(&path);
-    let mut message = document_message("open", &path);
+    let mut message = match notice(&path, false) {
+        Some(notice) => json!({ "type": "open", "path": path, "title": file_name(&path), "notice": notice }),
+        None => document_message("open", &path),
+    };
     message["anchor"] = json!(anchor);
     if message.get("html").is_some() {
         watcher::watch(&path);
@@ -148,10 +157,36 @@ pub fn open_path(path: &Path, anchor: Option<&str>) {
     webview::send(message);
 }
 
-/// Wczytuje plik ponownie do jego karty (po „Odśwież”).
+/// Wczytuje plik ponownie do jego karty (po „Odśwież” albo po potwierdzeniu dużego pliku).
 pub fn reload_path(path: &Path) {
-    watcher::watch(path);
-    webview::send(document_message("reload", path));
+    let message = match notice(path, true) {
+        Some(notice) => json!({ "type": "reload", "path": path, "title": file_name(path), "notice": notice }),
+        None => {
+            watcher::watch(path);
+            document_message("reload", path)
+        }
+    };
+    webview::send(message);
+}
+
+/// Komunikat zamiast treści: plik binarny, za duży albo (bez `confirmed`) duży do potwierdzenia.
+fn notice(path: &Path, confirmed: bool) -> Option<Value> {
+    use std::io::Read;
+
+    let size = std::fs::metadata(path).ok()?.len();
+    let megabytes = size as f64 / (1024.0 * 1024.0);
+    let mut start = Vec::with_capacity(8192);
+    let _ = std::fs::File::open(path).ok()?.take(8192).read_to_end(&mut start);
+    let kind = if size >= MAX_SIZE {
+        "tooLarge"
+    } else if start.contains(&0) {
+        "binary"
+    } else if size >= WARN_SIZE && !confirmed {
+        "large"
+    } else {
+        return None;
+    };
+    Some(json!({ "kind": kind, "megabytes": megabytes, "limit": MAX_SIZE / (1024 * 1024) }))
 }
 
 fn document_message(kind: &str, path: &Path) -> Value {
