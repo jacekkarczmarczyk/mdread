@@ -4,6 +4,7 @@ mod assets;
 mod assoc;
 mod clipboard;
 mod editor;
+mod i18n;
 mod instance;
 mod links;
 mod menu;
@@ -15,10 +16,15 @@ mod watcher;
 mod webview;
 mod window;
 
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
+use i18n::t;
 use serde_json::{Value, json};
+use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx};
+use windows::Win32::System::Threading::{OpenProcess, PROCESS_SYNCHRONIZE, WaitForSingleObject};
 use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, SetProcessDpiAwarenessContext};
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -28,13 +34,23 @@ use windows::core::{HSTRING, w};
 
 fn main() {
     timing::mark("main");
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
-    let flag = |name: &str| args.iter().any(|arg| arg == name);
-    if flag("--register") {
-        return register(flag("--quiet"));
+    i18n::init();
+    let mut args: Vec<OsString> = std::env::args_os().skip(1).collect();
+    let flag = |args: &[OsString], name: &str| args.iter().any(|arg| arg == name);
+    if flag(&args, "--register") {
+        return register(flag(&args, "--quiet"));
     }
-    if flag("--unregister") {
+    if flag(&args, "--unregister") {
         return assoc::unregister();
+    }
+    // `--after <pid>`: ponowne uruchomienie (np. po zmianie języka) czeka, aż poprzednie okno się zamknie,
+    // inaczej oddałoby mu pliki jako druga instancja.
+    if let Some(index) = args.iter().position(|arg| arg == "--after") {
+        let pid = args.get(index + 1).and_then(|pid| pid.to_str()?.parse().ok());
+        args.drain(index..(index + 2).min(args.len()));
+        if let Some(pid) = pid {
+            wait_for_exit(pid);
+        }
     }
     let paths: Vec<PathBuf> = args
         .into_iter()
@@ -57,9 +73,7 @@ fn main() {
 
     // Callback środowiska potrafi przyjść już w trakcie tworzenia okna, więc start dopiero, gdy HWND istnieje.
     if let Err(error) = webview::start(hwnd) {
-        fatal(&format!(
-            "Nie znaleziono środowiska WebView2. Zainstaluj Microsoft Edge WebView2 Runtime.\n\n{error}"
-        ));
+        fatal(&format!("{}\n\n{error}", t("error.webviewMissing")));
     }
 
     webview::send(editor::info());
@@ -67,12 +81,37 @@ fn main() {
     window::run_loop();
 }
 
+fn wait_for_exit(pid: u32) {
+    unsafe {
+        if let Ok(process) = OpenProcess(PROCESS_SYNCHRONIZE, false, pid) {
+            WaitForSingleObject(process, 5000);
+            let _ = CloseHandle(process);
+        }
+    }
+}
+
+/// Uruchamia mdread od nowa z tymi samymi kartami (ostatnia ścieżka to karta aktywna, którą strona
+/// wtedy przełącza) i zamyka bieżące okno.
+pub fn restart(paths: &[PathBuf], active: Option<&Path>) {
+    let Ok(exe) = std::env::current_exe() else { return };
+    let mut command = Command::new(exe);
+    command.arg("--after").arg(std::process::id().to_string()).args(paths);
+    if let Some(active) = active {
+        command.arg(active);
+    }
+    if command.spawn().is_ok()
+        && let Some(hwnd) = webview::window()
+    {
+        window::request_close(hwnd);
+    }
+}
+
 /// `mdread.exe --register [--quiet]`: wpisy w rejestrze i (bez `--quiet`) pytanie o otwarcie
 /// ustawień aplikacji domyślnych, bo domyślny program Windows każe wybrać użytkownikowi.
 fn register(quiet: bool) {
     if let Err(error) = assoc::register() {
         if !quiet {
-            show_error(&format!("Nie udało się zarejestrować mdread dla plików Markdown.\n\n{error}"));
+            show_error(&format!("{}\n\n{error}", t("register.failed")));
         }
         std::process::exit(1);
     }
@@ -80,12 +119,7 @@ fn register(quiet: bool) {
         return;
     }
     let answer = unsafe {
-        MessageBoxW(
-            None,
-            w!("mdread jest zarejestrowany dla plików .md i pojawi się w „Otwórz za pomocą”.\n\nOtworzyć Ustawienia → Aplikacje domyślne, żeby ustawić go jako domyślny?"),
-            w!("mdread"),
-            MB_YESNO | MB_ICONINFORMATION,
-        )
+        MessageBoxW(None, &HSTRING::from(t("register.done")), w!("mdread"), MB_YESNO | MB_ICONINFORMATION)
     };
     if answer == IDYES {
         unsafe {

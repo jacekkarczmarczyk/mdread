@@ -8,6 +8,7 @@ use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 use windows::core::{HSTRING, w};
 
+use crate::i18n::tf;
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
 
 const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown", "mdown", "mkd"];
@@ -16,7 +17,7 @@ const WEB_SCHEMES: &[&str] = &["http://", "https://", "mailto:"];
 pub fn open(url: &str) {
     if let Some((path, anchor)) = local_target(url) {
         if !path.exists() {
-            crate::show_error(&format!("Plik nie istnieje:\n{}", path.display()));
+            crate::show_error(&tf("error.fileMissing", &[("path", &path.display().to_string())]));
         } else if is_markdown(&path) {
             crate::open_path(&path, anchor.as_deref());
         } else {

@@ -7,12 +7,12 @@ use serde_json::Value;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     COREWEBVIEW2_COLOR, COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
     CreateCoreWebView2EnvironmentWithOptions, ICoreWebView2, ICoreWebView2Controller, ICoreWebView2Controller2,
-    ICoreWebView2Environment, ICoreWebView2File, ICoreWebView2WebMessageReceivedEventArgs,
+    ICoreWebView2Environment, ICoreWebView2EnvironmentOptions, ICoreWebView2File, ICoreWebView2WebMessageReceivedEventArgs,
     ICoreWebView2WebMessageReceivedEventArgs2, ICoreWebView2WebResourceRequestedEventArgs,
     ICoreWebView2WebResourceResponse,
 };
 use webview2_com::{
-    CoTaskMemPWSTR, CreateCoreWebView2ControllerCompletedHandler,
+    CoTaskMemPWSTR, CoreWebView2EnvironmentOptions, CreateCoreWebView2ControllerCompletedHandler,
     CreateCoreWebView2EnvironmentCompletedHandler, ExecuteScriptCompletedHandler, NavigationStartingEventHandler,
     NewWindowRequestedEventHandler, WebMessageReceivedEventHandler, WebResourceRequestedEventHandler,
     ZoomFactorChangedEventHandler,
@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{assets, clipboard, editor, links, menu, settings, timing, unc, watcher, window};
+use crate::{assets, clipboard, editor, i18n, links, menu, settings, timing, unc, watcher, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -52,8 +52,12 @@ pub fn start(hwnd: HWND) -> Result<()> {
     let handler = CreateCoreWebView2EnvironmentCompletedHandler::create(Box::new(|result, env| {
         result.and_then(|()| env.ok_or_else(|| Error::from(E_POINTER))).and_then(on_environment).or_else(fatal)
     }));
+    // Język wbudowanych tekstów WebView2 (np. „Kopiuj” w menu kontekstowym) taki jak aplikacji.
+    let options = CoreWebView2EnvironmentOptions::default();
+    unsafe { options.set_language(i18n::locale().to_owned()) };
+    let options: ICoreWebView2EnvironmentOptions = options.into();
     unsafe {
-        CreateCoreWebView2EnvironmentWithOptions(None, &HSTRING::from(data_dir), None, &handler)
+        CreateCoreWebView2EnvironmentWithOptions(None, &HSTRING::from(data_dir), &options, &handler)
     }
 }
 
@@ -244,6 +248,18 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 links::open(url);
             }
         }
+        Some("setLanguage") => {
+            let language = message["language"].as_str().unwrap_or_default();
+            if i18n::SETTINGS.contains(&language) && language != settings::language() {
+                settings::set_language(language);
+                let paths: Vec<PathBuf> = message["paths"]
+                    .as_array()
+                    .map(|paths| paths.iter().filter_map(Value::as_str).map(PathBuf::from).collect())
+                    .unwrap_or_default();
+                let active = message["active"].as_str().map(Path::new);
+                crate::restart(&paths, active);
+            }
+        }
         Some("reload") => {
             if let Some(path) = message["path"].as_str() {
                 crate::reload_path(Path::new(path));
@@ -333,6 +349,8 @@ fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourc
             Some((body, mime)) => respond(env, Some(&body), 200, "OK", mime)?,
             None => respond(env, None, 404, "Not Found", "text/plain")?,
         }
+    } else if uri == format!("{ORIGIN}strings.js") {
+        respond(env, Some(i18n::strings_script().as_bytes()), 200, "OK", "text/javascript; charset=utf-8")?
     } else {
         match assets::asset(uri.strip_prefix(ORIGIN).unwrap_or_default()) {
             Some((body, mime)) if mime.starts_with("text/html") => {
@@ -353,8 +371,10 @@ fn with_appearance(html: &[u8]) -> String {
     String::from_utf8_lossy(html).replacen(
         "<html lang=\"pl\">",
         &format!(
-            "<html lang=\"pl\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\">",
-            appearance.theme, appearance.mode
+            "<html lang=\"{}\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\">",
+            i18n::current(),
+            appearance.theme,
+            appearance.mode
         ),
         1,
     )
@@ -407,5 +427,5 @@ fn respond(
 }
 
 fn fatal(error: Error) -> Result<()> {
-    crate::fatal(&format!("Nie udało się uruchomić WebView2.\n\n{error}"));
+    crate::fatal(&format!("{}\n\n{error}", i18n::t("error.webviewStart")));
 }

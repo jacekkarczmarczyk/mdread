@@ -62,6 +62,17 @@ pub fn set_appearance(message: &Value) {
     save(&settings);
 }
 
+/// `system`, `pl` albo `en`.
+pub fn language() -> String {
+    load().get("language").and_then(Value::as_str).unwrap_or("system").to_owned()
+}
+
+pub fn set_language(language: &str) {
+    let mut settings = load();
+    settings.insert("language".into(), Value::String(language.to_owned()));
+    save(&settings);
+}
+
 pub fn zoom() -> Option<f64> {
     load().get("zoom").and_then(Value::as_f64)
 }

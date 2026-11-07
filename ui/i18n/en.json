@@ -1,0 +1,70 @@
+{
+  "tab.close": "Close (Ctrl+W)",
+  "tab.open": "Open file (Ctrl+O)",
+  "empty": "Open a Markdown file: <kbd>Ctrl</kbd>+<kbd>O</kbd> or drag it here.",
+
+  "math.button": "Math",
+  "math.on": "Math on — click to show the source text (e.g. when $ is a price)",
+  "math.off": "Math off — click to render it",
+
+  "appearance.button": "Appearance",
+  "appearance.theme": "Theme",
+  "appearance.mode": "Mode",
+  "appearance.language": "Language",
+  "theme.fluent": "Fluent (like Notepad)",
+  "theme.reading": "Reading",
+  "mode.system": "Same as system",
+  "mode.light": "Light",
+  "mode.dark": "Dark",
+  "language.system": "Same as system",
+
+  "edit.button": "Edit",
+  "edit.title": "Edit in: {name} (Ctrl+E)",
+  "edit.choose": "Choose editor",
+  "edit.chooseProgram": "Choose program…",
+  "editor.notepad": "Notepad",
+
+  "remote.clickToLoad": "Click to load",
+  "remote.altClickToLoad": "{alt} — click to load",
+  "remote.ask": "Load image from {host}?",
+  "remote.show": "Show",
+  "remote.cancel": "Cancel",
+  "remote.bar": "Images from the internet ({count}) were not loaded — loading them tells the owners of those addresses that you opened this file.",
+  "remote.showAll": "Show all",
+
+  "file.changed": "The file has changed on disk.",
+  "file.deleted": "The file has been deleted from disk.",
+  "file.reload": "Reload",
+  "file.ignore": "Ignore",
+  "file.closeTab": "Close tab",
+  "file.keep": "Keep",
+
+  "link.ctrlClick": "Ctrl+click to open",
+  "load.failed": "Could not load {src}",
+  "mermaid.error": "Diagram error: {message}",
+
+  "alert.note": "Note",
+  "alert.tip": "Tip",
+  "alert.important": "Important",
+  "alert.warning": "Warning",
+  "alert.caution": "Caution",
+
+  "menu.copyText": "Copy as text",
+  "menu.copyLink": "Copy link address",
+  "menu.copySource": "Copy Markdown source",
+  "menu.selectAll": "Select all",
+
+  "dialog.markdown": "Markdown",
+  "dialog.allFiles": "All files",
+  "dialog.programs": "Programs",
+
+  "error.webviewMissing": "WebView2 runtime not found. Install Microsoft Edge WebView2 Runtime.",
+  "error.webviewStart": "Could not start WebView2.",
+  "error.fileMissing": "File does not exist:\n{path}",
+  "error.editor": "Could not start the editor {program}.",
+
+  "register.failed": "Could not register mdread for Markdown files.",
+  "register.done": "mdread is registered for .md files and will appear in “Open with”.\n\nOpen Settings → Default apps to make it the default?",
+  "register.documentType": "Markdown document",
+  "register.description": "Markdown file viewer"
+}

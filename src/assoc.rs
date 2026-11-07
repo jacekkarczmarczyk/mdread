@@ -9,6 +9,8 @@ use windows::Win32::System::Registry::{
 use windows::Win32::UI::Shell::{SHCNE_ASSOCCHANGED, SHCNF_IDLIST, SHChangeNotify};
 use windows::core::{HSTRING, PCWSTR, Result};
 
+use crate::i18n::t;
+
 const EXTENSIONS: &[&str] = &[".md", ".markdown", ".mdown", ".mkd"];
 const PROG_ID: &str = "mdread.md";
 const PROG_ID_KEY: &str = r"Software\Classes\mdread.md";
@@ -22,7 +24,7 @@ pub fn register() -> Result<()> {
     let command = format!("\"{}\" \"%1\"", exe.display());
     let icon = format!("\"{}\",0", exe.display());
 
-    set(PROG_ID_KEY, None, "Dokument Markdown")?;
+    set(PROG_ID_KEY, None, &t("register.documentType"))?;
     set(&format!(r"{PROG_ID_KEY}\DefaultIcon"), None, &icon)?;
     set(&format!(r"{PROG_ID_KEY}\shell\open\command"), None, &command)?;
 
@@ -30,7 +32,7 @@ pub fn register() -> Result<()> {
     set(&format!(r"{APPLICATION_KEY}\shell\open\command"), None, &command)?;
 
     set(CAPABILITIES_KEY, Some("ApplicationName"), "mdread")?;
-    set(CAPABILITIES_KEY, Some("ApplicationDescription"), "Przeglądarka plików Markdown")?;
+    set(CAPABILITIES_KEY, Some("ApplicationDescription"), &t("register.description"))?;
     for extension in EXTENSIONS {
         set(&format!(r"Software\Classes\{extension}\OpenWithProgids"), Some(PROG_ID), "")?;
         set(&format!(r"{APPLICATION_KEY}\SupportedTypes"), Some(extension), "")?;

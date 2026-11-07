@@ -4,49 +4,56 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="app.css">
+<!-- Teksty w języku interfejsu (generowane przez aplikację), potem skrypt strony -->
+<script src="strings.js"></script>
 <script src="app.js" defer></script>
 </head>
 <body>
 <nav id="tabbar">
   <div id="tabs" role="tablist"></div>
-  <button id="new-tab" type="button" title="Otwórz plik (Ctrl+O)">+</button>
+  <button id="new-tab" type="button" data-i18n-title="tab.open">+</button>
   <div id="tools">
     <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/></svg>
-      Wzory
+      <span data-i18n="math.button"></span>
     </button>
     <div class="dropdown">
-      <button id="appearance-button" class="tool" type="button" title="Wygląd" aria-haspopup="menu">
+      <button id="appearance-button" class="tool" type="button" data-i18n-title="appearance.button" aria-haspopup="menu">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2a6 6 0 1 0 0 12c.8 0 1.2-.5 1.2-1.1 0-.7-.6-1-.6-1.7 0-.7.5-1.2 1.2-1.2H11a3 3 0 0 0 3-3C14 4.4 11.3 2 8 2zM5 8h.01M6.5 5h.01M9.5 5h.01M11 7.5h.01"/></svg>
-        Wygląd
+        <span data-i18n="appearance.button"></span>
       </button>
       <div id="appearance-menu" class="menu" role="menu" hidden>
-        <div class="menu-label">Motyw</div>
+        <div class="menu-label" data-i18n="appearance.theme"></div>
         <button type="button" role="menuitemradio" data-theme="github">GitHub</button>
         <button type="button" role="menuitemradio" data-theme="jetbrains">JetBrains</button>
         <button type="button" role="menuitemradio" data-theme="vscode">VS Code</button>
-        <button type="button" role="menuitemradio" data-theme="fluent">Fluent (jak Notatnik)</button>
-        <button type="button" role="menuitemradio" data-theme="reading">Czytelnia</button>
+        <button type="button" role="menuitemradio" data-theme="fluent" data-i18n="theme.fluent"></button>
+        <button type="button" role="menuitemradio" data-theme="reading" data-i18n="theme.reading"></button>
         <hr>
-        <div class="menu-label">Tryb</div>
-        <button type="button" role="menuitemradio" data-mode="system">Jak w systemie</button>
-        <button type="button" role="menuitemradio" data-mode="light">Jasny</button>
-        <button type="button" role="menuitemradio" data-mode="dark">Ciemny</button>
+        <div class="menu-label" data-i18n="appearance.mode"></div>
+        <button type="button" role="menuitemradio" data-mode="system" data-i18n="mode.system"></button>
+        <button type="button" role="menuitemradio" data-mode="light" data-i18n="mode.light"></button>
+        <button type="button" role="menuitemradio" data-mode="dark" data-i18n="mode.dark"></button>
+        <hr>
+        <div class="menu-label" data-i18n="appearance.language"></div>
+        <button type="button" role="menuitemradio" data-language="system" data-i18n="language.system"></button>
+        <button type="button" role="menuitemradio" data-language="pl" lang="pl">Polski</button>
+        <button type="button" role="menuitemradio" data-language="en" lang="en">English</button>
       </div>
     </div>
     <div id="edit-tools" class="dropdown split" hidden>
       <button id="edit" class="tool" type="button">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
-        Edytuj
+        <span data-i18n="edit.button"></span>
       </button>
-      <button id="edit-menu-button" class="tool" type="button" title="Wybierz edytor" aria-haspopup="menu">
+      <button id="edit-menu-button" class="tool" type="button" data-i18n-title="edit.choose" aria-haspopup="menu">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
       </button>
       <div id="edit-menu" class="menu" role="menu" hidden>
-        <button type="button" role="menuitemradio" data-action="resetEditor">Notatnik</button>
+        <button type="button" role="menuitemradio" data-action="resetEditor" data-i18n="editor.notepad"></button>
         <button type="button" role="menuitemradio" data-action="custom" id="custom-editor" hidden></button>
         <hr>
-        <button type="button" role="menuitem" data-action="chooseEditor">Wybierz program…</button>
+        <button type="button" role="menuitem" data-action="chooseEditor" data-i18n="edit.chooseProgram"></button>
       </div>
     </div>
   </div>
@@ -54,7 +61,7 @@
 <div id="file-bars"></div>
 <main id="docs">
   <div id="empty">
-    <p>Otwórz plik Markdown: <kbd>Ctrl</kbd>+<kbd>O</kbd> albo przeciągnij go tutaj.</p>
+    <p data-i18n-html="empty"></p>
   </div>
 </main>
 </body>

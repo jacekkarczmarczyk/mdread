@@ -11,6 +11,7 @@ use webview2_com::Microsoft::Web::WebView2::Win32::{
 use webview2_com::{ContextMenuRequestedEventHandler, CoTaskMemPWSTR, CustomItemSelectedEventHandler};
 use windows::core::{BOOL, HSTRING, Interface, PWSTR, Result};
 
+use crate::i18n::t;
 use crate::{clipboard, links};
 
 /// Wbudowane pozycje WebView2, które zostają (reszta: Wstecz, Odśwież, Zapisz, Drukuj… znika).
@@ -57,7 +58,7 @@ fn build(env: &ICoreWebView2Environment9, args: &ICoreWebView2ContextMenuRequest
         target.HasSelection(&mut has_selection)?;
         if has_selection.as_bool() {
             // Tekst liczy strona (wzory jako źródło $…$), wynik wraca wiadomością copyText.
-            menu.push(command(env, "Kopiuj jako tekst", || crate::webview::execute("copySelectionAsText()"))?);
+            menu.push(command(env, &t("menu.copyText"), || crate::webview::execute("copySelectionAsText()"))?);
         }
         let mut has_link = BOOL(0);
         target.HasLinkUri(&mut has_link)?;
@@ -65,17 +66,17 @@ fn build(env: &ICoreWebView2Environment9, args: &ICoreWebView2ContextMenuRequest
             let mut uri = PWSTR::null();
             target.LinkUri(&mut uri)?;
             let address = links::display(&CoTaskMemPWSTR::from(uri).to_string());
-            menu.push(command(env, "Kopiuj adres linku", move || clipboard::set_text(&address))?);
+            menu.push(command(env, &t("menu.copyLink"), move || clipboard::set_text(&address))?);
         }
         menu.extend(take("copyImage"));
         if !menu.is_empty() {
             menu.push(separator(env)?);
         }
         if let Some(path) = crate::webview::active_path() {
-            menu.push(command(env, "Kopiuj źródło Markdown", move || copy_source(&path))?);
+            menu.push(command(env, &t("menu.copySource"), move || copy_source(&path))?);
         }
         // Wbudowane „Zaznacz wszystko” WebView2 pokazuje tylko w polach edycji.
-        menu.push(command(env, "Zaznacz wszystko", || crate::webview::execute("selectAllInActive()"))?);
+        menu.push(command(env, &t("menu.selectAll"), || crate::webview::execute("selectAllInActive()"))?);
         if cfg!(debug_assertions) {
             menu.extend(take("inspectElement"));
         }

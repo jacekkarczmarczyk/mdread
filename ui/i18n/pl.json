@@ -1,0 +1,70 @@
+{
+  "tab.close": "Zamknij (Ctrl+W)",
+  "tab.open": "Otwórz plik (Ctrl+O)",
+  "empty": "Otwórz plik Markdown: <kbd>Ctrl</kbd>+<kbd>O</kbd> albo przeciągnij go tutaj.",
+
+  "math.button": "Wzory",
+  "math.on": "Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)",
+  "math.off": "Wzory wyłączone — kliknij, aby je wyrenderować",
+
+  "appearance.button": "Wygląd",
+  "appearance.theme": "Motyw",
+  "appearance.mode": "Tryb",
+  "appearance.language": "Język",
+  "theme.fluent": "Fluent (jak Notatnik)",
+  "theme.reading": "Czytelnia",
+  "mode.system": "Jak w systemie",
+  "mode.light": "Jasny",
+  "mode.dark": "Ciemny",
+  "language.system": "Jak w systemie",
+
+  "edit.button": "Edytuj",
+  "edit.title": "Edytuj w: {name} (Ctrl+E)",
+  "edit.choose": "Wybierz edytor",
+  "edit.chooseProgram": "Wybierz program…",
+  "editor.notepad": "Notatnik",
+
+  "remote.clickToLoad": "Kliknij, aby wczytać",
+  "remote.altClickToLoad": "{alt} — kliknij, aby wczytać",
+  "remote.ask": "Wczytać obrazek z {host}?",
+  "remote.show": "Pokaż",
+  "remote.cancel": "Anuluj",
+  "remote.bar": "Obrazki z internetu ({count}) nie zostały wczytane — ich wczytanie pokaże autorom adresów, że otwierasz ten plik.",
+  "remote.showAll": "Pokaż wszystkie",
+
+  "file.changed": "Plik został zmieniony na dysku.",
+  "file.deleted": "Plik został usunięty z dysku.",
+  "file.reload": "Odśwież",
+  "file.ignore": "Ignoruj",
+  "file.closeTab": "Zamknij kartę",
+  "file.keep": "Zostaw",
+
+  "link.ctrlClick": "Ctrl+klik, aby otworzyć",
+  "load.failed": "Nie udało się wczytać {src}",
+  "mermaid.error": "Błąd diagramu: {message}",
+
+  "alert.note": "Uwaga",
+  "alert.tip": "Wskazówka",
+  "alert.important": "Ważne",
+  "alert.warning": "Ostrzeżenie",
+  "alert.caution": "Przestroga",
+
+  "menu.copyText": "Kopiuj jako tekst",
+  "menu.copyLink": "Kopiuj adres linku",
+  "menu.copySource": "Kopiuj źródło Markdown",
+  "menu.selectAll": "Zaznacz wszystko",
+
+  "dialog.markdown": "Markdown",
+  "dialog.allFiles": "Wszystkie pliki",
+  "dialog.programs": "Programy",
+
+  "error.webviewMissing": "Nie znaleziono środowiska WebView2. Zainstaluj Microsoft Edge WebView2 Runtime.",
+  "error.webviewStart": "Nie udało się uruchomić WebView2.",
+  "error.fileMissing": "Plik nie istnieje:\n{path}",
+  "error.editor": "Nie udało się uruchomić edytora {program}.",
+
+  "register.failed": "Nie udało się zarejestrować mdread dla plików Markdown.",
+  "register.done": "mdread jest zarejestrowany dla plików .md i pojawi się w „Otwórz za pomocą”.\n\nOtworzyć Ustawienia → Aplikacje domyślne, żeby ustawić go jako domyślny?",
+  "register.documentType": "Dokument Markdown",
+  "register.description": "Przeglądarka plików Markdown"
+}

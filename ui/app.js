@@ -2,6 +2,20 @@
 
 const host = window.chrome.webview;
 const LOCAL_ORIGIN = 'https://mdread.localhost/';
+
+// Teksty interfejsu ze strings.js (generuje aplikacja w wybranym języku; zmiana języka ją restartuje).
+const I18N = window.I18N ?? { strings: {}, language: 'en', setting: 'system' };
+
+function t(key, params = {}) {
+  let text = I18N.strings[key] ?? key;
+  for (const [name, value] of Object.entries(params)) text = text.replaceAll(`{${name}}`, value);
+  return text;
+}
+
+document.documentElement.lang = I18N.language;
+for (const element of document.querySelectorAll('[data-i18n]')) element.textContent = t(element.dataset.i18n);
+for (const element of document.querySelectorAll('[data-i18n-html]')) element.innerHTML = t(element.dataset.i18nHtml);
+for (const element of document.querySelectorAll('[data-i18n-title]')) element.title = t(element.dataset.i18nTitle);
 const tabsEl = document.getElementById('tabs');
 const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
@@ -48,7 +62,7 @@ function openDocument({ path, title, html, error, anchor }) {
   const closeButton = document.createElement('button');
   closeButton.type = 'button';
   closeButton.className = 'tab-close';
-  closeButton.title = 'Zamknij (Ctrl+W)';
+  closeButton.title = t('tab.close');
   closeButton.textContent = '×';
   tab.append(label, closeButton);
 
@@ -98,16 +112,27 @@ function documentContent(path, html, error, allowRemote) {
       if (!isRemote(image.getAttribute('src'))) continue;
       const placeholder = document.createElement('span');
       placeholder.className = 'remote-image';
-      placeholder.title = image.alt ? `${image.alt} — kliknij, aby wczytać` : 'Kliknij, aby wczytać';
+      placeholder.title = image.alt ? t('remote.altClickToLoad', { alt: image.alt }) : t('remote.clickToLoad');
       remoteImages.set(placeholder, image);
       showPlaceholderAddress(placeholder);
       image.replaceWith(placeholder);
     }
   }
+  translateAlertTitles(template.content);
   const doc = document.createElement('article');
   doc.className = 'markdown-body';
   doc.append(template.content);
   return doc;
+}
+
+// comrak nadaje alertom angielskie tytuły (Note, Warning…); własne tytuły z pliku zostają bez zmian.
+const ALERT_DEFAULT_TITLES = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' };
+
+function translateAlertTitles(root) {
+  for (const title of root.querySelectorAll('.markdown-alert-title')) {
+    const kind = title.parentElement.className.match(/markdown-alert-(\w+)/)?.[1];
+    if (kind && title.textContent.trim() === ALERT_DEFAULT_TITLES[kind]) title.textContent = t(`alert.${kind}`);
+  }
 }
 
 // Znacznik miejsca → oryginalny <img> (wstawiany dopiero po zgodzie użytkownika).
@@ -125,15 +150,15 @@ function askToLoad(placeholder) {
   const host = new URL(remoteImages.get(placeholder).getAttribute('src')).host;
   placeholder.classList.add('asking');
   const question = document.createElement('span');
-  question.textContent = `Wczytać obrazek z ${host}?`;
-  const load = iconButton('Pokaż', 'image', (event) => {
+  question.textContent = t('remote.ask', { host });
+  const load = iconButton(t('remote.show'), 'image', (event) => {
     event.stopPropagation();
     const entry = tabs.find((tab) => tab.content.contains(placeholder));
     placeholder.replaceWith(remoteImages.get(placeholder));
     if (entry) updateRemoteBar(entry);
   });
   load.classList.add('primary');
-  const cancel = iconButton('Anuluj', 'close', (event) => {
+  const cancel = iconButton(t('remote.cancel'), 'close', (event) => {
     event.stopPropagation();
     showPlaceholderAddress(placeholder);
   });
@@ -164,8 +189,8 @@ function updateRemoteBar(entry) {
   const bar = entry.remoteBar;
   bar.className = 'file-bar file-bar-remote';
   const text = document.createElement('span');
-  text.textContent = `Obrazki z internetu (${count}) nie zostały wczytane — ich wczytanie pokaże autorom adresów, że otwierasz ten plik.`;
-  const show = iconButton('Pokaż wszystkie', 'image', () => showRemoteImages(entry));
+  text.textContent = t('remote.bar', { count });
+  const show = iconButton(t('remote.showAll'), 'image', () => showRemoteImages(entry));
   show.classList.add('primary');
   bar.replaceChildren(text, show);
   bar.hidden = entry !== active;
@@ -202,10 +227,10 @@ function showFileBar(entry, kind) {
   bar.className = `file-bar file-bar-${kind}`;
   const text = document.createElement('span');
   const buttons = kind === 'changed'
-    ? [iconButton('Odśwież', 'refresh', () => post({ type: 'reload', path: entry.path })),
-      iconButton('Ignoruj', 'ignore', () => hideFileBar(entry))]
-    : [iconButton('Zamknij kartę', 'close', () => close(entry)), iconButton('Zostaw', 'keep', () => hideFileBar(entry))];
-  text.textContent = kind === 'changed' ? 'Plik został zmieniony na dysku.' : 'Plik został usunięty z dysku.';
+    ? [iconButton(t('file.reload'), 'refresh', () => post({ type: 'reload', path: entry.path })),
+      iconButton(t('file.ignore'), 'ignore', () => hideFileBar(entry))]
+    : [iconButton(t('file.closeTab'), 'close', () => close(entry)), iconButton(t('file.keep'), 'keep', () => hideFileBar(entry))];
+  text.textContent = t(kind === 'changed' ? 'file.changed' : 'file.deleted');
   buttons[0].classList.add('primary');
   bar.append(text, ...buttons);
   // Pasek leży nad obszarem przewijania, więc przesuwa dokument zamiast zasłaniać czytane miejsce.
@@ -293,7 +318,7 @@ function load(src) {
         ? Object.assign(document.createElement('link'), { rel: 'stylesheet', href: src })
         : Object.assign(document.createElement('script'), { src });
       element.onload = resolve;
-      element.onerror = () => reject(new Error(`Nie udało się wczytać ${src}`));
+      element.onerror = () => reject(new Error(t('load.failed', { src })));
       document.head.append(element);
     }));
   }
@@ -366,7 +391,7 @@ async function renderDiagrams(blocks) {
       // Zostaje źródło diagramu z opisem błędu w podpowiedzi.
       document.getElementById(`d${id}`)?.remove();
       pre.classList.add('mermaid-error');
-      pre.title = `Błąd diagramu: ${error.message ?? error}`;
+      pre.title = t('mermaid.error', { message: error.message ?? String(error) });
     }
   }
 }
@@ -391,9 +416,7 @@ const mathToggle = document.getElementById('math-toggle');
 function showMathToggle(entry) {
   mathToggle.hidden = !entry.hasMath;
   mathToggle.setAttribute('aria-pressed', String(entry.mathOn));
-  mathToggle.title = entry.mathOn
-    ? 'Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)'
-    : 'Wzory wyłączone — kliknij, aby je wyrenderować';
+  mathToggle.title = t(entry.mathOn ? 'math.on' : 'math.off');
 }
 
 mathToggle.addEventListener('click', () => {
@@ -465,7 +488,7 @@ function editActive() {
 }
 
 function showEditor({ name, custom }) {
-  editButton.title = `Edytuj w: ${name} (Ctrl+E)`;
+  editButton.title = t('edit.title', { name });
   customEditor.hidden = !custom;
   customEditor.textContent = custom ? name : '';
   editMenu.querySelector('[data-action="resetEditor"]').setAttribute('aria-checked', String(!custom));
@@ -543,10 +566,20 @@ function applyAppearance() {
 }
 
 dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) => {
+  if (item.dataset.language) {
+    // Zmiana języka uruchamia aplikację od nowa z tymi samymi kartami (aktywna na końcu).
+    if (item.dataset.language !== I18N.setting) {
+      post({ type: 'setLanguage', language: item.dataset.language, paths: tabs.map((entry) => entry.path), active: active?.path });
+    }
+    return;
+  }
   if (item.dataset.theme) appearance.theme = item.dataset.theme;
   if (item.dataset.mode) appearance.mode = item.dataset.mode;
   applyAppearance();
 });
+for (const item of appearanceMenu.querySelectorAll('[data-language]')) {
+  item.setAttribute('aria-checked', String(item.dataset.language === I18N.setting));
+}
 systemDark.addEventListener('change', () => { if (appearance.mode === 'system') applyAppearance(); });
 applyAppearance();
 
@@ -623,7 +656,7 @@ docs.addEventListener('mouseover', (event) => {
   linkTip.replaceChildren();
   if (link.dataset.title) linkTip.append(Object.assign(document.createElement('strong'), { textContent: link.dataset.title }));
   linkTip.append(Object.assign(document.createElement('span'), { textContent: linkAddress(link) }));
-  if (!isAnchor) linkTip.append(Object.assign(document.createElement('small'), { textContent: 'Ctrl+klik, aby otworzyć' }));
+  if (!isAnchor) linkTip.append(Object.assign(document.createElement('small'), { textContent: t('link.ctrlClick') }));
   linkTip.hidden = false;
 });
 

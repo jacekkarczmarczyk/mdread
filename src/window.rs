@@ -22,6 +22,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
+use crate::i18n::t;
 use crate::{editor, instance, settings, watcher, webview};
 
 pub const CLASS_NAME: PCWSTR = w!("mdread.window");
@@ -30,13 +31,10 @@ pub const CLASS_NAME: PCWSTR = w!("mdread.window");
 const WM_APP_OPEN_DIALOG: u32 = WM_APP + 1;
 const WM_APP_CHOOSE_EDITOR: u32 = WM_APP + 2;
 
-const MARKDOWN_FILTERS: &[COMDLG_FILTERSPEC] = &[
-    COMDLG_FILTERSPEC { pszName: w!("Markdown"), pszSpec: w!("*.md;*.markdown;*.mdown;*.mkd") },
-    COMDLG_FILTERSPEC { pszName: w!("Wszystkie pliki"), pszSpec: w!("*.*") },
-];
-
-const PROGRAM_FILTERS: &[COMDLG_FILTERSPEC] =
-    &[COMDLG_FILTERSPEC { pszName: w!("Programy"), pszSpec: w!("*.exe") }];
+/// Filtry okna dialogowego: (klucz nazwy w słowniku, wzorzec).
+const MARKDOWN_FILTERS: &[(&str, &str)] =
+    &[("dialog.markdown", "*.md;*.markdown;*.mdown;*.mkd"), ("dialog.allFiles", "*.*")];
+const PROGRAM_FILTERS: &[(&str, &str)] = &[("dialog.programs", "*.exe")];
 
 pub fn create() -> Result<HWND> {
     let appearance = settings::appearance();
@@ -155,7 +153,14 @@ fn bring_to_front(hwnd: HWND) {
     }
 }
 
-fn show_open_dialog(hwnd: HWND, filters: &[COMDLG_FILTERSPEC], multiple: bool) -> Result<Vec<PathBuf>> {
+fn show_open_dialog(hwnd: HWND, filters: &[(&str, &str)], multiple: bool) -> Result<Vec<PathBuf>> {
+    // Teksty filtrów muszą żyć do końca wywołania SetFileTypes.
+    let texts: Vec<(HSTRING, HSTRING)> =
+        filters.iter().map(|(name, spec)| (HSTRING::from(t(name)), HSTRING::from(*spec))).collect();
+    let filters: Vec<COMDLG_FILTERSPEC> = texts
+        .iter()
+        .map(|(name, spec)| COMDLG_FILTERSPEC { pszName: PCWSTR(name.as_ptr()), pszSpec: PCWSTR(spec.as_ptr()) })
+        .collect();
     unsafe {
         let dialog: IFileOpenDialog = CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
         let mut options = dialog.GetOptions()? | FOS_FILEMUSTEXIST;
@@ -163,7 +168,7 @@ fn show_open_dialog(hwnd: HWND, filters: &[COMDLG_FILTERSPEC], multiple: bool) -
             options |= FOS_ALLOWMULTISELECT;
         }
         dialog.SetOptions(options)?;
-        dialog.SetFileTypes(filters)?;
+        dialog.SetFileTypes(&filters)?;
         if dialog.Show(Some(hwnd)).is_err() {
             return Ok(Vec::new()); // anulowane
         }
