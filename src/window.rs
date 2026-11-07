@@ -17,12 +17,21 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, PCWSTR, Result, w};
 
-use crate::{instance, webview};
+use crate::{editor, instance, settings, webview};
 
 pub const CLASS_NAME: PCWSTR = w!("mdread.window");
 
-/// Okno dialogowe otwierania plików pokazujemy z pętli komunikatów, a nie z callbacku WebView2.
+/// Okna dialogowe pokazujemy z pętli komunikatów, a nie z callbacku WebView2.
 const WM_APP_OPEN_DIALOG: u32 = WM_APP + 1;
+const WM_APP_CHOOSE_EDITOR: u32 = WM_APP + 2;
+
+const MARKDOWN_FILTERS: &[COMDLG_FILTERSPEC] = &[
+    COMDLG_FILTERSPEC { pszName: w!("Markdown"), pszSpec: w!("*.md;*.markdown;*.mdown;*.mkd") },
+    COMDLG_FILTERSPEC { pszName: w!("Wszystkie pliki"), pszSpec: w!("*.*") },
+];
+
+const PROGRAM_FILTERS: &[COMDLG_FILTERSPEC] =
+    &[COMDLG_FILTERSPEC { pszName: w!("Programy"), pszSpec: w!("*.exe") }];
 
 pub fn create() -> Result<HWND> {
     unsafe {
@@ -80,6 +89,12 @@ pub fn request_open_dialog(hwnd: HWND) {
     }
 }
 
+pub fn request_choose_editor(hwnd: HWND) {
+    unsafe {
+        let _ = PostMessageW(Some(hwnd), WM_APP_CHOOSE_EDITOR, WPARAM(0), LPARAM(0));
+    }
+}
+
 pub fn request_close(hwnd: HWND) {
     unsafe {
         let _ = PostMessageW(Some(hwnd), WM_CLOSE, WPARAM(0), LPARAM(0));
@@ -95,14 +110,15 @@ fn bring_to_front(hwnd: HWND) {
     }
 }
 
-fn show_open_dialog(hwnd: HWND) -> Result<Vec<PathBuf>> {
+fn show_open_dialog(hwnd: HWND, filters: &[COMDLG_FILTERSPEC], multiple: bool) -> Result<Vec<PathBuf>> {
     unsafe {
         let dialog: IFileOpenDialog = CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
-        dialog.SetOptions(dialog.GetOptions()? | FOS_ALLOWMULTISELECT | FOS_FILEMUSTEXIST)?;
-        dialog.SetFileTypes(&[
-            COMDLG_FILTERSPEC { pszName: w!("Markdown"), pszSpec: w!("*.md;*.markdown;*.mdown;*.mkd") },
-            COMDLG_FILTERSPEC { pszName: w!("Wszystkie pliki"), pszSpec: w!("*.*") },
-        ])?;
+        let mut options = dialog.GetOptions()? | FOS_FILEMUSTEXIST;
+        if multiple {
+            options |= FOS_ALLOWMULTISELECT;
+        }
+        dialog.SetOptions(options)?;
+        dialog.SetFileTypes(filters)?;
         if dialog.Show(Some(hwnd)).is_err() {
             return Ok(Vec::new()); // anulowane
         }
@@ -143,8 +159,15 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             }
         }
         WM_APP_OPEN_DIALOG => {
-            if let Ok(paths) = show_open_dialog(hwnd) {
+            if let Ok(paths) = show_open_dialog(hwnd, MARKDOWN_FILTERS, true) {
                 crate::open_paths(&paths);
+            }
+            LRESULT(0)
+        }
+        WM_APP_CHOOSE_EDITOR => {
+            if let Some(program) = show_open_dialog(hwnd, PROGRAM_FILTERS, false).ok().and_then(|paths| paths.into_iter().next()) {
+                settings::set_editor(Some(program));
+                webview::send(editor::info());
             }
             LRESULT(0)
         }

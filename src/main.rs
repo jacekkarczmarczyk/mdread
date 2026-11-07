@@ -1,7 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod editor;
 mod instance;
 mod markdown;
+mod settings;
 mod timing;
 mod webview;
 mod window;
@@ -41,6 +43,7 @@ fn main() {
         ));
     }
 
+    webview::send(editor::info());
     open_paths(&paths);
     window::run_loop();
 }
@@ -70,9 +73,13 @@ fn file_name(path: &Path) -> String {
     path.file_name().unwrap_or(path.as_os_str()).to_string_lossy().into_owned()
 }
 
-pub fn fatal(message: &str) -> ! {
+pub fn show_error(message: &str) {
     unsafe {
         MessageBoxW(None, &HSTRING::from(message), w!("mdread"), MB_ICONERROR);
     }
+}
+
+pub fn fatal(message: &str) -> ! {
+    show_error(message);
     std::process::exit(1);
 }

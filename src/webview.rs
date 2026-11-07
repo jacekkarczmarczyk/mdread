@@ -1,7 +1,7 @@
 //! WebView2: środowisko, kontroler, wbudowane zasoby UI i wymiana wiadomości ze stroną.
 
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
@@ -22,7 +22,7 @@ use windows::Win32::UI::Shell::SHCreateMemStream;
 use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
-use crate::{timing, window};
+use crate::{editor, settings, timing, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -174,6 +174,16 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
     match message["type"].as_str() {
         Some("title") => window::set_title(hwnd, message["title"].as_str()),
         Some("openDialog") => window::request_open_dialog(hwnd),
+        Some("edit") => {
+            if let Some(path) = message["path"].as_str() {
+                editor::open(Path::new(path));
+            }
+        }
+        Some("chooseEditor") => window::request_choose_editor(hwnd),
+        Some("resetEditor") => {
+            settings::set_editor(None);
+            send(editor::info());
+        }
         Some("drop") => crate::open_paths(&dropped_paths(args)),
         Some("close") => window::request_close(hwnd),
         Some("ready") => {

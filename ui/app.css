@@ -111,6 +111,65 @@ body {
   font-size: 20px;
 }
 
+/* Edycja w zewnętrznym programie */
+
+#tools {
+  position: relative;
+  display: flex;
+  align-self: center;
+  margin: 0 0 4px auto;
+  padding-left: 8px;
+}
+
+#tools > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+#tools > button:hover { background: var(--tab-hover); }
+#edit { border-radius: 6px 0 0 6px; }
+#edit-menu-button { margin-left: -1px; padding: 0 6px !important; border-radius: 0 6px 6px 0; }
+
+#tools svg { width: 14px; height: 14px; }
+#edit svg { fill: currentColor; }
+#edit-menu-button svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+
+#edit-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+#edit-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px 6px 28px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+}
+
+#edit-menu button:hover { background: var(--tab-hover); }
+#edit-menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 14px; }
+#edit-menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); background: none; }
+
 /* Dokumenty: każda karta przewija się osobno, więc pozycja zostaje przy przełączaniu */
 
 #docs {

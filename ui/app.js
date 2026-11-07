@@ -4,8 +4,13 @@ const host = window.chrome.webview;
 const tabsEl = document.getElementById('tabs');
 const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
+const tools = document.getElementById('tools');
+const editButton = document.getElementById('edit');
+const editMenuButton = document.getElementById('edit-menu-button');
+const editMenu = document.getElementById('edit-menu');
+const customEditor = document.getElementById('custom-editor');
 
-/** @type {{ key: string, title: string, tab: HTMLElement, page: HTMLElement }[]} */
+/** @type {{ path: string, key: string, title: string, tab: HTMLElement, page: HTMLElement }[]} */
 const tabs = [];
 let active = null;
 let firstRender = true;
@@ -52,7 +57,7 @@ function openDocument({ path, title, html, error }) {
   closeButton.textContent = '×';
   tab.append(label, closeButton);
 
-  const entry = { key, title, tab, page };
+  const entry = { path, key, title, tab, page };
   tab.addEventListener('click', (event) => {
     if (event.target === closeButton) close(entry);
     else activate(entry);
@@ -82,6 +87,7 @@ function activate(entry) {
   }
   active = entry;
   empty.hidden = true;
+  tools.hidden = false;
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
   post({ type: 'title', title: entry.title });
@@ -111,6 +117,7 @@ window.addEventListener('keydown', (event) => {
   const key = event.key.toLowerCase();
   let handled = true;
   if (key === 'o') post({ type: 'openDialog' });
+  else if (key === 'e') editActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
   else if (key === 'tab') cycle(event.shiftKey ? -1 : 1);
   else if (key === 'pagedown') cycle(1);
@@ -122,6 +129,39 @@ window.addEventListener('keydown', (event) => {
 }, true);
 
 document.getElementById('new-tab').addEventListener('click', () => post({ type: 'openDialog' }));
+
+// Edycja w zewnętrznym programie
+
+function editActive() {
+  if (active) post({ type: 'edit', path: active.path });
+}
+
+function showEditor({ name, custom }) {
+  editButton.title = `Edytuj w: ${name} (Ctrl+E)`;
+  customEditor.hidden = !custom;
+  customEditor.textContent = custom ? name : '';
+  editMenu.querySelector('[data-action="resetEditor"]').setAttribute('aria-checked', String(!custom));
+  customEditor.setAttribute('aria-checked', String(custom));
+}
+
+function toggleEditMenu(open = editMenu.hidden) {
+  editMenu.hidden = !open;
+  editMenuButton.setAttribute('aria-expanded', String(open));
+}
+
+editButton.addEventListener('click', editActive);
+editMenuButton.addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleEditMenu();
+});
+editMenu.addEventListener('click', (event) => {
+  const action = event.target.closest('button')?.dataset.action;
+  if (action === 'resetEditor' || action === 'chooseEditor') post({ type: action });
+  toggleEditMenu(false);
+});
+document.addEventListener('click', () => toggleEditMenu(false));
+window.addEventListener('blur', () => toggleEditMenu(false));
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleEditMenu(false); });
 
 // Upuszczone pliki idą do hosta jako obiekty File (host odczyta z nich ścieżki); bez tego WebView nawigowałby do pliku.
 window.addEventListener('dragover', (event) => {
@@ -137,6 +177,7 @@ window.addEventListener('drop', (event) => {
 host.addEventListener('message', (event) => {
   const message = event.data;
   if (message.type === 'open') openDocument(message);
+  else if (message.type === 'editor') showEditor(message);
 });
 
 post({ type: 'ready' });

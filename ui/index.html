@@ -9,6 +9,21 @@
 <nav id="tabbar">
   <div id="tabs" role="tablist"></div>
   <button id="new-tab" type="button" title="Otwórz plik (Ctrl+O)">+</button>
+  <div id="tools" hidden>
+    <button id="edit" type="button">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 1.8a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L5.6 13.1l-3.4.9.9-3.4z"/></svg>
+      Edytuj
+    </button>
+    <button id="edit-menu-button" type="button" title="Wybierz edytor" aria-haspopup="menu">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div id="edit-menu" role="menu" hidden>
+      <button type="button" role="menuitemradio" data-action="resetEditor">Notatnik</button>
+      <button type="button" role="menuitemradio" data-action="custom" id="custom-editor" hidden></button>
+      <hr>
+      <button type="button" role="menuitem" data-action="chooseEditor">Wybierz program…</button>
+    </div>
+  </div>
 </nav>
 <main id="docs">
   <div id="empty">
