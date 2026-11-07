@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
 
+mod assets;
 mod clipboard;
 mod editor;
 mod instance;

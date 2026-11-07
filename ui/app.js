@@ -43,6 +43,7 @@ function openDocument({ path, title, html, error, anchor }) {
     doc.innerHTML = html;
     page.append(doc);
   }
+  const hasMath = page.querySelector('[data-math-style]') !== null;
 
   const tab = document.createElement('div');
   tab.className = 'tab';
@@ -58,7 +59,7 @@ function openDocument({ path, title, html, error, anchor }) {
   closeButton.textContent = '×';
   tab.append(label, closeButton);
 
-  const entry = { path, key, title, tab, page };
+  const entry = { path, key, title, tab, page, hasMath, mathOn: true, math: [] };
   tab.addEventListener('click', (event) => {
     if (event.target === closeButton) close(entry);
     else activate(entry);
@@ -72,6 +73,7 @@ function openDocument({ path, title, html, error, anchor }) {
   tabs.push(entry);
   activate(entry);
   if (anchor) scrollToAnchor(entry, anchor);
+  enhance(entry);
 
   if (firstRender) {
     firstRender = false;
@@ -90,10 +92,118 @@ function activate(entry) {
   active = entry;
   empty.hidden = true;
   tools.hidden = false;
+  showMathToggle(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
   post({ type: 'active', path: entry.path, title: entry.title });
 }
+
+// Rozszerzenia: biblioteki ładowane dopiero, gdy dokument ich potrzebuje.
+
+const loaded = new Map();
+
+function load(src, media = 'all') {
+  if (!loaded.has(src)) {
+    loaded.set(src, new Promise((resolve, reject) => {
+      const element = src.endsWith('.css')
+        ? Object.assign(document.createElement('link'), { rel: 'stylesheet', href: src, media })
+        : Object.assign(document.createElement('script'), { src });
+      element.onload = resolve;
+      element.onerror = () => reject(new Error(`Nie udało się wczytać ${src}`));
+      document.head.append(element);
+    }));
+  }
+  return loaded.get(src);
+}
+
+async function enhance(entry) {
+  const page = entry.page;
+  const code = page.querySelectorAll('pre[lang]:not([lang="mermaid"]):not([data-math-style]) > code');
+  const math = page.querySelectorAll('[data-math-style]');
+  const diagrams = page.querySelectorAll('pre[lang="mermaid"]');
+  const jobs = [];
+  if (code.length) jobs.push(highlightCode(code));
+  if (math.length) jobs.push(renderMath(entry, math));
+  if (diagrams.length) jobs.push(renderDiagrams(diagrams));
+  for (const result of await Promise.allSettled(jobs)) {
+    if (result.status === 'rejected') console.error(result.reason);
+  }
+}
+
+async function highlightCode(blocks) {
+  await Promise.all([
+    load('vendor/highlight/highlight.min.js'),
+    load('vendor/highlight/light.min.css', '(prefers-color-scheme: light)'),
+    load('vendor/highlight/dark.min.css', '(prefers-color-scheme: dark)'),
+  ]);
+  for (const code of blocks) {
+    const language = code.parentElement.getAttribute('lang');
+    if (!hljs.getLanguage(language)) continue;
+    code.innerHTML = hljs.highlight(code.textContent, { language, ignoreIllegals: true }).value;
+    code.classList.add('hljs');
+  }
+}
+
+async function renderMath(entry, elements) {
+  await Promise.all([load('vendor/katex/katex.min.js'), load('vendor/katex/katex.min.css')]);
+  for (const source of elements) {
+    const display = source.dataset.mathStyle === 'display';
+    const rendered = document.createElement(display ? 'div' : 'span');
+    rendered.className = display ? 'math math-display' : 'math';
+    const tex = source.textContent;
+    rendered.dataset.tex = tex;
+    katex.render(tex, rendered, { displayMode: display, throwOnError: false });
+    // Wyłączone wzory pokazują tekst jak w pliku: $…$ i $$…$$ wracają jako zwykły tekst, `$`…`$` jako kod.
+    const plain = source.tagName === 'SPAN'
+      ? document.createTextNode(display ? `$$${tex}$$` : `$${tex}$`)
+      : source;
+    source.replaceWith(entry.mathOn ? rendered : plain);
+    entry.math.push({ source: plain, rendered });
+  }
+}
+
+let diagramCount = 0;
+
+async function renderDiagrams(blocks) {
+  await load('vendor/mermaid/mermaid.min.js');
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+  for (const pre of blocks) {
+    const id = `mermaid-${++diagramCount}`;
+    try {
+      const { svg } = await mermaid.render(id, pre.textContent);
+      const diagram = document.createElement('div');
+      diagram.className = 'mermaid-diagram';
+      diagram.innerHTML = svg;
+      pre.replaceWith(diagram);
+    } catch (error) {
+      // Zostaje źródło diagramu z opisem błędu w podpowiedzi.
+      document.getElementById(`d${id}`)?.remove();
+      pre.classList.add('mermaid-error');
+      pre.title = `Błąd diagramu: ${error.message ?? error}`;
+    }
+  }
+}
+
+const mathToggle = document.getElementById('math-toggle');
+
+function showMathToggle(entry) {
+  mathToggle.hidden = !entry.hasMath;
+  mathToggle.setAttribute('aria-pressed', String(entry.mathOn));
+  mathToggle.title = entry.mathOn
+    ? 'Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)'
+    : 'Wzory wyłączone — kliknij, aby je wyrenderować';
+}
+
+mathToggle.addEventListener('click', () => {
+  if (!active) return;
+  active.mathOn = !active.mathOn;
+  for (const { source, rendered } of active.math) {
+    if (active.mathOn) source.replaceWith(rendered);
+    else rendered.replaceWith(source);
+  }
+  showMathToggle(active);
+});
 
 // Wywoływane z menu kontekstowego hosta.
 function selectAllInActive() {
@@ -129,7 +239,7 @@ window.addEventListener('keydown', (event) => {
   if (!event.ctrlKey || event.altKey) return;
   const key = event.key.toLowerCase();
   let handled = true;
-  if (key === 'c' && event.shiftKey) post({ type: 'copyText', text: getSelection().toString() });
+  if (key === 'c' && event.shiftKey) copySelectionAsText();
   else if (key === 'o') post({ type: 'openDialog' });
   else if (key === 'e') editActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
@@ -179,14 +289,37 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape') to
 
 // Kopiowanie z formatowaniem: sam HTML zaznaczenia, bez stylów wyliczonych z motywu
 // (inaczej np. jasny tekst z ciemnego motywu trafiałby do Worda jako biały).
-document.addEventListener('copy', (event) => {
+// Wzory KaTeX wracają jako źródło $…$, bo ich tekst to zlepek MathML i HTML.
+function selectionContent() {
   const selection = getSelection();
-  if (selection.isCollapsed) return;
+  if (selection.isCollapsed) return null;
   const container = document.createElement('div');
   for (let i = 0; i < selection.rangeCount; i++) container.append(selection.getRangeAt(i).cloneContents());
   for (const element of container.querySelectorAll('[data-sourcepos]')) element.removeAttribute('data-sourcepos');
-  event.clipboardData.setData('text/html', container.innerHTML);
-  event.clipboardData.setData('text/plain', selection.toString());
+  for (const math of container.querySelectorAll('.math')) {
+    const fence = math.classList.contains('math-display') ? '$$' : '$';
+    math.replaceWith(`${fence}${math.dataset.tex}${fence}`);
+  }
+  // innerText (z podziałem na wiersze) liczy się tylko dla elementu w dokumencie.
+  container.style.cssText = 'position: fixed; left: -10000px; top: 0; white-space: normal;';
+  document.body.append(container);
+  const text = container.innerText;
+  container.remove();
+  container.removeAttribute('style');
+  return { html: container.innerHTML, text };
+}
+
+// Ctrl+Shift+C i „Kopiuj jako tekst” z menu hosta.
+function copySelectionAsText() {
+  const content = selectionContent();
+  if (content) post({ type: 'copyText', text: content.text });
+}
+
+document.addEventListener('copy', (event) => {
+  const content = selectionContent();
+  if (!content) return;
+  event.clipboardData.setData('text/html', content.html);
+  event.clipboardData.setData('text/plain', content.text);
   event.preventDefault();
 });
 

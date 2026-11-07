@@ -37,6 +37,14 @@ fn main() {
 const x = [1, 2, 3].map(n => n * 2);
 ```
 
+```
+blok bez języka
+```
+
+```nieznany-jezyk
+blok z nieznanym językiem
+```
+
 > Cytat z **formatowaniem**.
 
 > [!NOTE]

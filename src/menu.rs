@@ -56,10 +56,8 @@ fn build(env: &ICoreWebView2Environment9, args: &ICoreWebView2ContextMenuRequest
         let mut has_selection = BOOL(0);
         target.HasSelection(&mut has_selection)?;
         if has_selection.as_bool() {
-            let mut text = PWSTR::null();
-            target.SelectionText(&mut text)?;
-            let text = CoTaskMemPWSTR::from(text).to_string();
-            menu.push(command(env, "Kopiuj jako tekst", move || clipboard::set_text(&text))?);
+            // Tekst liczy strona (wzory jako źródło $…$), wynik wraca wiadomością copyText.
+            menu.push(command(env, "Kopiuj jako tekst", || crate::webview::execute("copySelectionAsText()"))?);
         }
         let mut has_link = BOOL(0);
         target.HasLinkUri(&mut has_link)?;

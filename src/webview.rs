@@ -23,7 +23,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{clipboard, editor, links, menu, settings, timing, window};
+use crate::{assets, clipboard, editor, links, menu, settings, timing, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -299,7 +299,7 @@ fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourc
             None => respond(env, None, 404, "Not Found", "text/plain")?,
         }
     } else {
-        match asset(uri.strip_prefix(ORIGIN).unwrap_or_default()) {
+        match assets::asset(uri.strip_prefix(ORIGIN).unwrap_or_default()) {
             Some((body, mime)) => respond(env, Some(body), 200, "OK", mime)?,
             None => respond(env, None, 404, "Not Found", "text/plain")?,
         }
@@ -337,15 +337,6 @@ fn respond(
     unsafe {
         env.CreateWebResourceResponse(stream.as_ref(), status, &HSTRING::from(reason), &HSTRING::from(headers))
     }
-}
-
-fn asset(path: &str) -> Option<(&'static [u8], &'static str)> {
-    Some(match path {
-        "index.html" => (include_bytes!("../ui/index.html"), "text/html; charset=utf-8"),
-        "app.css" => (include_bytes!("../ui/app.css"), "text/css; charset=utf-8"),
-        "app.js" => (include_bytes!("../ui/app.js"), "text/javascript; charset=utf-8"),
-        _ => return None,
-    })
 }
 
 fn fatal(error: Error) -> Result<()> {

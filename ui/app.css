@@ -248,6 +248,23 @@ pre code { padding: 0; background: none; font-size: 100%; }
 
 blockquote { margin-left: 0; padding: 0 1em; color: var(--muted); border-left: .25em solid var(--border); }
 
+/* Alerty GitHub: > [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION] */
+.markdown-alert { margin: 0 0 16px; padding: 8px 16px; border-left: .25em solid var(--alert); }
+.markdown-alert > :last-child { margin-bottom: 0; }
+.markdown-alert-title { margin-bottom: 4px; color: var(--alert); font-weight: 600; }
+.markdown-alert-note { --alert: #0969da; }
+.markdown-alert-tip { --alert: #1a7f37; }
+.markdown-alert-important { --alert: #8250df; }
+.markdown-alert-warning { --alert: #9a6700; }
+.markdown-alert-caution { --alert: #d1242f; }
+@media (prefers-color-scheme: dark) {
+  .markdown-alert-note { --alert: #4493f8; }
+  .markdown-alert-tip { --alert: #3fb950; }
+  .markdown-alert-important { --alert: #ab7df8; }
+  .markdown-alert-warning { --alert: #d29922; }
+  .markdown-alert-caution { --alert: #f85149; }
+}
+
 table { border-collapse: collapse; display: block; overflow: auto; }
 th, td { padding: 6px 13px; border: 1px solid var(--border); }
 th { font-weight: 600; }
@@ -257,3 +274,17 @@ hr { height: .25em; margin: 24px 0; background: var(--border); border: 0; }
 img { max-width: 100%; }
 
 .error { padding: 32px 40px; color: #d1242f; }
+
+/* Rozszerzenia */
+
+/* Motywy highlight.js mają własne tło; zostaje tło bloku kodu z motywu aplikacji. */
+.markdown-body pre code.hljs { padding: 0; background: transparent; }
+
+.math-display { overflow-x: auto; overflow-y: hidden; margin: 0 0 16px; }
+
+.mermaid-diagram { margin: 0 0 16px; text-align: center; }
+.mermaid-diagram svg { max-width: 100%; height: auto; }
+
+pre.mermaid-error { border-left: 3px solid #d1242f; }
+
+#math-toggle[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
