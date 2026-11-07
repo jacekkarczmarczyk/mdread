@@ -90,7 +90,8 @@ fn now() -> u64 {
 }
 
 /// Starts the check in the background: from the saved result if it is less than a day old, otherwise from GitHub.
-/// `manual` (the switch was just turned on): the page shows the result even when there is nothing new.
+/// `manual` (the switch was just turned on): always from GitHub (a release may have come out since the saved
+/// check), and the page shows the result even when there is nothing new.
 pub fn start(hwnd: HWND, manual: bool) {
     if !settings::update_check() || !may_update() {
         return;
@@ -105,7 +106,7 @@ pub fn start(hwnd: HWND, manual: bool) {
     }
     let hwnd = hwnd.0 as isize;
     let cached = settings::update_latest()
-        .filter(|latest| now().saturating_sub(latest["checkedAt"].as_u64().unwrap_or(0)) < CHECK_INTERVAL.as_secs());
+        .filter(|latest| !manual && now().saturating_sub(latest["checkedAt"].as_u64().unwrap_or(0)) < CHECK_INTERVAL.as_secs());
     std::thread::spawn(move || {
         let latest = cached.map_or_else(fetch_latest, Ok);
         CHECKING.store(false, Ordering::Release);
