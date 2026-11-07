@@ -7,6 +7,8 @@ program of your choice.
 Rust + Win32 + WebView2 (part of Windows 11). Markdown is rendered by [comrak](https://github.com/kivikakk/comrak)
 and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 
+![MDRead with the outline panel, a formula and a Mermaid diagram](docs/screenshots/overview.png)
+
 ## Features
 
 ### Reading
@@ -14,10 +16,15 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 - GitHub-flavoured Markdown: tables, task lists, footnotes, alerts; YAML front matter is not shown.
 - Formulas with KaTeX (`$…$`, `$$…$$`), Mermaid diagrams (shown as code until you switch them on),
   highlight.js for code blocks. The libraries load only when a document needs them.
-- Outline panel with headings H1–H4, highlighting the headings currently on screen.
-- Five themes (GitHub, JetBrains, VS Code, Fluent, Reading), each light, dark or following Windows;
-  the title bar follows the theme.
-- Polish and English interface.
+
+![A KaTeX formula and a Mermaid diagram](docs/screenshots/formulas-diagrams.png)
+
+### Outline
+
+- A panel on the left lists the headings; H1–H4 sets how deep it goes and a click jumps to the heading.
+- Headings currently on screen are highlighted, and the panel scrolls along with the document.
+
+<img src="docs/screenshots/outline.png" alt="The outline panel with the headings on screen highlighted" width="300">
 
 ### Tabs
 
@@ -25,10 +32,24 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 - Drag to reorder, a list of all tabs, and a tab menu: close others / to the left / to the right / all,
   show in Explorer or Total Commander.
 
+![The tab menu](docs/screenshots/tab-menu.png)
+
 ### Copying
 
 - **Ctrl+C** copies the selection with formatting but without theme colours, so it pastes cleanly into
-  Word or Teams. **Ctrl+Shift+C** copies plain text. Code blocks have their own **Copy** button.
+  Word or Teams. **Ctrl+Shift+C** copies plain text.
+- Each code block shows its language and has its own **Copy** button and a **Wrap** button that breaks
+  long lines of that block instead of scrolling them sideways.
+
+![Code blocks with the Wrap and Copy buttons (the second one wrapped), a table and an alert](docs/screenshots/code.png)
+
+### Themes and language
+
+- Five themes (GitHub, JetBrains, VS Code, Fluent, Reading), each light, dark or following Windows;
+  the title bar follows the theme.
+- Polish and English interface.
+
+![The help page in the JetBrains dark theme](docs/screenshots/dark.png)
 
 ### Files
 
@@ -104,3 +125,8 @@ Measured on Windows 11 with a release build: the window appears about 35 ms afte
 the document about 400 ms after (most of it is WebView2 starting). Opening takes roughly 1 s per MB of Markdown.
 
 Set `MDREAD_TIMING=<log file>` to write the timing of each startup step.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The embedded libraries keep their own licenses: KaTeX (MIT), Mermaid (MIT),
+highlight.js (BSD-3-Clause); the gear icon follows the shape of Lucide's `settings` icon (ISC).
