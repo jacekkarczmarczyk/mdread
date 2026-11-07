@@ -10,6 +10,8 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
+  /* Przewijają się karty i strona instalacji, nigdy cała strona */
+  overflow: hidden;
   font-family: var(--font-text);
   font-size: var(--font-size);
   line-height: var(--line-height);
@@ -317,6 +319,33 @@ hr { height: .25em; margin: 24px 0; background: var(--border); border: 0; }
 img { max-width: 100%; }
 
 .error { padding: 32px 40px; color: #d1242f; }
+
+/* Instalator: strona zamiast kart i dokumentów */
+body.installing #tabbar, body.installing #file-bars, body.installing #docs { display: none; }
+
+#installer { flex: 1; overflow: auto; display: grid; place-items: start center; padding: 48px 24px; }
+
+.installer-card {
+  display: grid;
+  gap: 10px;
+  width: min(560px, 100%);
+  padding: 28px 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--tabbar-bg);
+  font: 14px/1.5 var(--font-ui);
+}
+
+.installer-card h1 { margin: 0 0 4px; padding: 0; border: 0; font-size: 22px; }
+.installer-intro, .hint { margin: 0; color: var(--muted); }
+.hint { margin: -6px 0 6px 26px; font-size: 12px; }
+.field-label { margin-top: 6px; font-weight: 600; }
+.check, .choice { display: flex; align-items: center; gap: 8px; }
+.choice-list { display: grid; gap: 6px; margin: 0 0 6px 2px; }
+.installer-error { margin: 0; color: #d1242f; white-space: pre-line; }
+:root[data-scheme="dark"] .installer-error { color: #f85149; }
+.installer-buttons { display: flex; gap: 8px; margin-top: 8px; font-size: 13px; }
+.tool:disabled { opacity: .6; }
 
 /* Duży / binarny plik: komunikat zamiast treści */
 .notice { display: grid; place-items: center; gap: 12px; padding: 64px 40px; color: var(--muted); font: 14px/1.5 var(--font-ui); text-align: center; }

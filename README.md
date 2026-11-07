@@ -17,6 +17,17 @@ cargo build --release
 
 Wynik: `target\release\mdread.exe` (jeden plik, interfejs i biblioteki wbudowane).
 
+## Instalacja
+
+`mdread.exe` uruchomiony bez plików spoza katalogu instalacji (np. z Pobranych) pokazuje stronę „Instalacja”:
+skojarzenie `.md`, edytor dla przycisku „Edytuj”, skrót w menu Start i na pulpicie. Instalacja kopiuje program do
+`%LOCALAPPDATA%\Programs\MDRead` (tylko bieżący użytkownik, bez administratora) i dodaje wpis w „Aplikacje i funkcje”.
+
+```
+mdread.exe --install      strona instalacji także z katalogu programu
+mdread.exe --uninstall    odinstalowanie (po potwierdzeniu); ustawienia w %APPDATA%\mdread zostają
+```
+
 ## Skojarzenie z plikami .md
 
 ```

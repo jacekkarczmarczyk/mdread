@@ -60,6 +60,20 @@
     </div>
   </div>
 </nav>
+<section id="installer" hidden>
+  <form id="installer-form" class="installer-card">
+    <h1 data-i18n="install.title"></h1>
+    <p id="installer-intro" class="installer-intro"></p>
+    <label class="check"><input type="checkbox" name="associate" checked> <span data-i18n="install.associate"></span></label>
+    <p class="hint" data-i18n="install.associateHint"></p>
+    <div class="field-label" data-i18n="install.editor"></div>
+    <div id="installer-editors" class="choice-list"></div>
+    <label class="check"><input type="checkbox" name="startMenu" checked> <span data-i18n="install.startMenu"></span></label>
+    <label class="check"><input type="checkbox" name="desktop"> <span data-i18n="install.desktop"></span></label>
+    <p id="installer-error" class="installer-error" hidden></p>
+    <div id="installer-buttons" class="installer-buttons"></div>
+  </form>
+</section>
 <div id="file-bars"></div>
 <main id="docs">
   <div id="empty">

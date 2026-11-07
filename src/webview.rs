@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{assets, clipboard, editor, i18n, links, menu, settings, timing, unc, watcher, window};
+use crate::{assets, clipboard, editor, i18n, install, links, menu, settings, timing, unc, watcher, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -248,6 +248,13 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 links::open(url);
             }
         }
+        Some("install") => match install::install(message) {
+            Ok(()) => {
+                install::launch_installed(message["associate"].as_bool().unwrap_or(false));
+                window::request_close(hwnd);
+            }
+            Err(error) => send(serde_json::json!({ "type": "installError", "message": error })),
+        },
         Some("setLanguage") => {
             let language = message["language"].as_str().unwrap_or_default();
             if i18n::SETTINGS.contains(&language) && language != settings::language() {

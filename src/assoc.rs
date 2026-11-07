@@ -3,11 +3,13 @@
 //! i w Ustawieniach → Aplikacje domyślne, gdzie użytkownik wybiera go sam.
 
 use windows::Win32::System::Registry::{
-    HKEY, HKEY_CURRENT_USER, KEY_READ, REG_SZ, RegCloseKey, RegDeleteKeyValueW, RegDeleteKeyW, RegDeleteTreeW,
+    HKEY, HKEY_CURRENT_USER, KEY_READ, REG_DWORD, REG_SZ, RegCloseKey, RegDeleteKeyValueW, RegDeleteKeyW, RegDeleteTreeW,
     RegOpenKeyExW, RegQueryInfoKeyW, RegSetKeyValueW,
 };
 use windows::Win32::UI::Shell::{SHCNE_ASSOCCHANGED, SHCNF_IDLIST, SHChangeNotify};
 use windows::core::{HSTRING, PCWSTR, Result};
+
+use std::path::Path;
 
 use crate::i18n::t;
 
@@ -19,8 +21,8 @@ const APP_KEY: &str = r"Software\mdread";
 const CAPABILITIES_KEY: &str = r"Software\mdread\Capabilities";
 const REGISTERED_APPLICATIONS_KEY: &str = r"Software\RegisteredApplications";
 
-pub fn register() -> Result<()> {
-    let exe = std::env::current_exe()?;
+/// Rejestruje `exe` (bieżący program albo kopię zainstalowaną) dla plików Markdown.
+pub fn register(exe: &Path) -> Result<()> {
     let command = format!("\"{}\" \"%1\"", exe.display());
     let icon = format!("\"{}\",0", exe.display());
 
@@ -62,7 +64,23 @@ pub fn unregister() {
     notify_shell();
 }
 
-fn set(key: &str, name: Option<&str>, value: &str) -> Result<()> {
+/// Wartość liczbowa (REG_DWORD) w HKCU.
+pub fn set_dword(key: &str, name: &str, value: u32) -> Result<()> {
+    unsafe {
+        RegSetKeyValueW(
+            HKEY_CURRENT_USER,
+            &HSTRING::from(key),
+            &HSTRING::from(name),
+            REG_DWORD.0,
+            Some(&value as *const u32 as _),
+            4,
+        )
+        .ok()
+    }
+}
+
+/// Wartość tekstowa (REG_SZ) w HKCU; `None` jako nazwa to wartość domyślna klucza.
+pub fn set(key: &str, name: Option<&str>, value: &str) -> Result<()> {
     let data: Vec<u16> = value.encode_utf16().chain([0]).collect();
     let name = name.map(HSTRING::from);
     unsafe {

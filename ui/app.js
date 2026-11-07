@@ -233,6 +233,7 @@ const ICONS = {
   image: 'M2.5 3.5h11v9h-11zM2.5 10.5l3-3 3 3 2-2 3 3M10.5 6.5h.01',
   open: 'M3.5 2.5h6l3 3v8h-9zM9.5 2.5v3h3',
   edit: 'M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3',
+  install: 'M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13.5h10',
 };
 
 function iconButton(label, icon, action) {
@@ -534,6 +535,52 @@ function showEditors({ items, selectedName }) {
 
 editButton.addEventListener('click', editActive);
 
+// Instalator (pobrany exe uruchomiony bez plików): strona zamiast kart, wybory idą do hosta.
+
+const installerForm = document.getElementById('installer-form');
+const installerError = document.getElementById('installer-error');
+
+function showInstaller({ editors, directory }) {
+  document.body.classList.add('installing');
+  document.getElementById('installer').hidden = false;
+  document.getElementById('installer-intro').textContent = t('install.intro', { directory });
+  document.getElementById('installer-editors').replaceChildren(...editors.map((item) => {
+    const label = document.createElement('label');
+    label.className = 'choice';
+    const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'editor', value: item.path, checked: item.selected });
+    label.append(radio);
+    if (item.icon) label.append(Object.assign(document.createElement('img'), { src: item.icon, alt: '', className: 'menu-icon' }));
+    label.append(item.name);
+    return label;
+  }));
+  const install = iconButton(t('install.install'), 'install', () => {
+    const form = new FormData(installerForm);
+    installerError.hidden = true;
+    for (const button of installerForm.querySelectorAll('button')) button.disabled = true;
+    post({
+      type: 'install',
+      associate: form.has('associate'),
+      startMenu: form.has('startMenu'),
+      desktop: form.has('desktop'),
+      editor: form.get('editor'),
+    });
+  });
+  install.classList.add('primary');
+  const skip = iconButton(t('install.skip'), 'open', () => {
+    document.body.classList.remove('installing');
+    document.getElementById('installer').hidden = true;
+  });
+  document.getElementById('installer-buttons').replaceChildren(install, skip);
+}
+
+function showInstallError({ message }) {
+  installerError.textContent = `${t('install.failed')} ${message}`;
+  installerError.hidden = false;
+  for (const button of installerForm.querySelectorAll('button')) button.disabled = false;
+}
+
+installerForm.addEventListener('submit', (event) => event.preventDefault());
+
 // Rozwijane menu: otwiera przycisk, zamyka wybór pozycji, klik obok, Esc albo utrata fokusu okna.
 
 const menus = [];
@@ -738,6 +785,8 @@ host.addEventListener('message', (event) => {
     if (entry) showFileBar(entry, message.type === 'fileChanged' ? 'changed' : 'deleted');
   }
   else if (message.type === 'editors') showEditors(message);
+  else if (message.type === 'installer') showInstaller(message);
+  else if (message.type === 'installError') showInstallError(message);
 });
 
 post({ type: 'ready' });

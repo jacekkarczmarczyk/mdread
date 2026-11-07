@@ -6,6 +6,7 @@ mod clipboard;
 mod editor;
 mod exeinfo;
 mod i18n;
+mod install;
 mod instance;
 mod links;
 mod menu;
@@ -44,6 +45,14 @@ fn main() {
     if flag(&args, "--unregister") {
         return assoc::unregister();
     }
+    if flag(&args, "--uninstall") {
+        return install::uninstall();
+    }
+    // Strona instalacji: na życzenie albo gdy pobrany exe uruchomiono bez plików (build debug wtedy
+    // otwiera zwykłe puste okno, żeby nie przeszkadzać przy pracy).
+    let installer = flag(&args, "--install")
+        || (args.is_empty() && !install::is_installed() && !cfg!(debug_assertions));
+    args.retain(|arg| arg != "--install");
     // `--after <pid>`: ponowne uruchomienie (np. po zmianie języka) czeka, aż poprzednie okno się zamknie,
     // inaczej oddałoby mu pliki jako druga instancja.
     if let Some(index) = args.iter().position(|arg| arg == "--after") {
@@ -57,7 +66,8 @@ fn main() {
         .into_iter()
         .map(|arg| std::path::absolute(&arg).unwrap_or_else(|_| PathBuf::from(arg)))
         .collect();
-    if !instance::claim(&paths) {
+    // Instalator działa obok ewentualnie uruchomionego MDRead, nie oddaje mu sterowania.
+    if !installer && !instance::claim(&paths) {
         return;
     }
 
@@ -77,7 +87,15 @@ fn main() {
         fatal(&format!("{}\n\n{error}", t("error.webviewMissing")));
     }
 
-    webview::send(editor::info());
+    let editors = editor::info();
+    if installer {
+        webview::send(json!({
+            "type": "installer",
+            "editors": editors["items"],
+            "directory": install::install_dir(),
+        }));
+    }
+    webview::send(editors);
     open_paths(&paths);
     window::run_loop();
 }
@@ -110,7 +128,8 @@ pub fn restart(paths: &[PathBuf], active: Option<&Path>) {
 /// `mdread.exe --register [--quiet]`: wpisy w rejestrze i (bez `--quiet`) pytanie o otwarcie
 /// ustawień aplikacji domyślnych, bo domyślny program Windows każe wybrać użytkownikowi.
 fn register(quiet: bool) {
-    if let Err(error) = assoc::register() {
+    let registered = std::env::current_exe().map_err(Into::into).and_then(|exe| assoc::register(&exe));
+    if let Err(error) = registered {
         if !quiet {
             show_error(&format!("{}\n\n{error}", t("register.failed")));
         }
@@ -123,9 +142,14 @@ fn register(quiet: bool) {
         MessageBoxW(None, &HSTRING::from(t("register.done")), w!("MDRead"), MB_YESNO | MB_ICONINFORMATION)
     };
     if answer == IDYES {
-        unsafe {
-            ShellExecuteW(None, w!("open"), w!("ms-settings:defaultapps?registeredAppUser=mdread"), None, None, SW_SHOWNORMAL);
-        }
+        open_default_apps();
+    }
+}
+
+/// Ustawienia → Aplikacje domyślne na stronie MDRead (domyślny program wybiera użytkownik).
+pub fn open_default_apps() {
+    unsafe {
+        ShellExecuteW(None, w!("open"), w!("ms-settings:defaultapps?registeredAppUser=mdread"), None, None, SW_SHOWNORMAL);
     }
 }
 
