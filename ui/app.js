@@ -21,6 +21,7 @@ const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
 const fileBars = document.getElementById('file-bars');
 const editTools = document.getElementById('edit-tools');
+const tabListTools = document.getElementById('tab-list-tools');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
 const editMenu = document.getElementById('edit-menu');
@@ -334,6 +335,7 @@ function activate(entry) {
   active = entry;
   empty.hidden = true;
   editTools.hidden = false;
+  tabListTools.hidden = false;
   showMathToggle(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
@@ -533,6 +535,7 @@ function closeTabs(list, keepWindow = false) {
     active = null;
     empty.hidden = false;
     editTools.hidden = true;
+    tabListTools.hidden = true;
     mathToggle.hidden = true;
     post({ type: 'active', path: null, title: null });
   } else if (!tabs.includes(active)) {
