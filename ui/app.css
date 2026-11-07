@@ -391,7 +391,33 @@ img { max-width: 100%; }
 .mermaid-diagram { margin: 0 0 16px; text-align: center; }
 .mermaid-diagram svg { max-width: 100%; height: auto; }
 
-pre.mermaid-error { border-left: 3px solid #d1242f; }
+/* Błędny diagram: kod z czerwoną kreską i napis pod nim, tylko przy włączonych diagramach */
+.diagrams-on pre.mermaid-error { margin-bottom: 4px; border-left: 3px solid #d1242f; }
+.mermaid-error-message { display: none; margin: 0 0 16px; color: #d1242f; font: 12px/1.4 var(--font-ui); }
+.diagrams-on .mermaid-error-message { display: block; }
+:root[data-scheme="dark"] .mermaid-error-message { color: #f85149; }
+:root[data-scheme="dark"] .diagrams-on pre.mermaid-error { border-left-color: #f85149; }
+
+/* Pasek nad blokiem kodu: język i „Kopiuj”, doklejony do <pre> (nie zaznacza się) */
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px 3px 16px;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--code-radius) var(--code-radius) 0 0;
+  background: var(--code-bg);
+  color: var(--muted);
+  font: 12px/1.4 var(--font-ui);
+  user-select: none;
+}
+
+.code-header + pre { border-radius: 0 0 var(--code-radius) var(--code-radius); }
+.code-header .tool { height: 22px; padding: 0 6px; border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
+.code-header .tool:hover { border-color: var(--border); color: var(--fg); }
+/* Narysowany diagram zamiast kodu: pasek niepotrzebny */
+.code-header:has(+ .mermaid-diagram) { display: none; }
 
 /* Przełączniki diagramów i wzorów: wyłączony wyszarzony, z przekreśloną ikoną */
 .tool.toggle { padding: 0 7px; }

@@ -57,6 +57,8 @@
   "link.ctrlClick": "Ctrl+klik, aby otworzyć",
   "load.failed": "Nie udało się wczytać {src}",
   "mermaid.error": "Błąd diagramu: {message}",
+  "code.copy": "Kopiuj",
+  "code.copied": "Skopiowano",
 
   "alert.note": "Uwaga",
   "alert.tip": "Wskazówka",

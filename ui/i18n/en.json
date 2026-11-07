@@ -57,6 +57,8 @@
   "link.ctrlClick": "Ctrl+click to open",
   "load.failed": "Could not load {src}",
   "mermaid.error": "Diagram error: {message}",
+  "code.copy": "Copy",
+  "code.copied": "Copied",
 
   "alert.note": "Note",
   "alert.tip": "Tip",

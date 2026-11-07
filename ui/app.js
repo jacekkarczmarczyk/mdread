@@ -71,7 +71,7 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   const entry = {
     path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
     // Diagramy domyślnie jako kod; Mermaid (5 MB) ładuje się dopiero po włączeniu przyciskiem.
-    hasDiagrams, diagramsOn: false, diagrams: [],
+    hasDiagrams, diagramsOn: false, diagrams: [], diagramsRendered: false,
     remoteBar: null, remoteAllowed: false,
     // Pozycja czytania z poprzedniego uruchomienia: odtwarzana, gdy karta jest widoczna, i jeszcze raz
     // po wzorach/diagramach (zmieniają wysokość bloków).
@@ -151,6 +151,7 @@ function documentContent(path, html, error, allowRemote, notice) {
     }
   }
   translateAlertTitles(template.content);
+  addCodeHeaders(template.content);
   const doc = document.createElement('article');
   doc.className = 'markdown-body';
   doc.append(template.content);
@@ -165,6 +166,30 @@ function translateAlertTitles(root) {
     const kind = title.parentElement.className.match(/markdown-alert-(\w+)/)?.[1];
     if (kind && title.textContent.trim() === ALERT_DEFAULT_TITLES[kind]) title.textContent = t(`alert.${kind}`);
   }
+}
+
+// Pasek nad blokiem kodu: język i „Kopiuj”. Osobny element przed <pre> (nie opakowanie), żeby <pre> zostało
+// blokiem pozycji czytania; narysowany diagram Mermaid podmienia samo <pre>, a pasek chowa wtedy CSS.
+function addCodeHeaders(root) {
+  for (const pre of root.querySelectorAll('pre:not([data-math-style])')) {
+    const header = document.createElement('div');
+    header.className = 'code-header';
+    const language = Object.assign(document.createElement('span'), { textContent: pre.getAttribute('lang') ?? '' });
+    const copy = iconButton('', 'copy', () => {
+      post({ type: 'copyText', text: pre.textContent });
+      showCopyState(copy, true);
+      clearTimeout(copy.timer);
+      copy.timer = setTimeout(() => showCopyState(copy, false), 1500);
+    });
+    showCopyState(copy, false);
+    header.append(language, copy);
+    pre.before(header);
+  }
+}
+
+function showCopyState(button, copied) {
+  button.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[copied ? 'keep' : 'copy']}"/></svg>`;
+  button.append(t(copied ? 'code.copied' : 'code.copy'));
 }
 
 // Znacznik miejsca → oryginalny <img> (wstawiany dopiero po zgodzie użytkownika).
@@ -246,6 +271,7 @@ const ICONS = {
   open: 'M3.5 2.5h6l3 3v8h-9zM9.5 2.5v3h3',
   edit: 'M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3',
   install: 'M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13.5h10',
+  copy: 'M5.5 5.5h8v8h-8zM2.5 10.5v-8h8',
 };
 
 function iconButton(label, icon, action) {
@@ -319,6 +345,7 @@ function reloadDocument({ path, html, error, notice }) {
   entry.math = [];
   entry.hasMath = content.querySelector('[data-math-style]') !== null;
   entry.diagrams = [];
+  entry.diagramsRendered = false;
   entry.hasDiagrams = content.querySelector('pre[lang="mermaid"]') !== null;
   if (entry === active) showToggles(entry);
   restoreReadingPosition(entry.page, position);
@@ -448,6 +475,8 @@ function initializeMermaid() {
 }
 
 async function renderDiagrams(entry, blocks) {
+  // Rysowane raz na treść (także gdy wszystkie diagramy są błędne); przełącznik potem tylko podmienia.
+  entry.diagramsRendered = true;
   await load('vendor/mermaid/mermaid.min.js');
   initializeMermaid();
   for (const pre of blocks) {
@@ -462,10 +491,17 @@ async function renderDiagrams(entry, blocks) {
       // Przycisk mógł zostać kliknięty jeszcze raz w trakcie rysowania.
       if (entry.diagramsOn) pre.replaceWith(diagram);
     } catch (error) {
-      // Zostaje źródło diagramu z opisem błędu w podpowiedzi.
+      // Zostaje źródło diagramu, pod nim pierwsza linia błędu (pełny opis w podpowiedzi). Przy wyłączonych
+      // diagramach napis chowa CSS (.page bez .diagrams-on).
       document.getElementById(`d${id}`)?.remove();
+      const message = error.message ?? String(error);
       pre.classList.add('mermaid-error');
-      pre.title = t('mermaid.error', { message: error.message ?? String(error) });
+      pre.title = t('mermaid.error', { message });
+      const note = document.createElement('div');
+      note.className = 'mermaid-error-message';
+      note.title = pre.title;
+      note.textContent = t('mermaid.error', { message: message.split('\n')[0].replace(/:$/, '') });
+      pre.after(note);
     }
   }
 }
@@ -503,8 +539,9 @@ diagramToggle.addEventListener('click', async () => {
   const entry = active;
   if (!entry) return;
   entry.diagramsOn = !entry.diagramsOn;
+  entry.page.classList.toggle('diagrams-on', entry.diagramsOn);
   showToggles(entry);
-  if (entry.diagramsOn && !entry.diagrams.length) {
+  if (entry.diagramsOn && !entry.diagramsRendered) {
     // Pierwsze włączenie: ładowanie Mermaida i rysowanie (chwilę trwa, przycisk w tym czasie nieaktywny).
     diagramToggle.disabled = true;
     try {
@@ -946,6 +983,8 @@ function selectionContent() {
   const container = document.createElement('div');
   for (let i = 0; i < selection.rangeCount; i++) container.append(selection.getRangeAt(i).cloneContents());
   for (const element of container.querySelectorAll('[data-sourcepos]')) element.removeAttribute('data-sourcepos');
+  // Paski nad kodem i napisy o błędach diagramów to interfejs, nie treść dokumentu.
+  for (const element of container.querySelectorAll('.code-header, .mermaid-error-message')) element.remove();
   for (const math of container.querySelectorAll('.math')) {
     const fence = math.classList.contains('math-display') ? '$$' : '$';
     math.replaceWith(`${fence}${math.dataset.tex}${fence}`);
