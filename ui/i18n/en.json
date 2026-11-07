@@ -1,6 +1,12 @@
 {
   "tab.close": "Close (Ctrl+W)",
   "tab.open": "Open file (Ctrl+O)",
+  "tab.list": "All tabs",
+  "tab.closeThis": "Close",
+  "tab.closeOthers": "Close others",
+  "tab.closeLeft": "Close tabs to the left",
+  "tab.closeRight": "Close tabs to the right",
+  "tab.closeAll": "Close all",
   "empty": "Open a Markdown file: <kbd>Ctrl</kbd>+<kbd>O</kbd> or drag it here.",
 
   "math.button": "Math",

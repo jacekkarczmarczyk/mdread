@@ -45,7 +45,7 @@ body {
   align-items: center;
   flex: 0 1 auto;
   gap: 6px;
-  min-width: 72px;
+  min-width: 120px;
   max-width: 220px;
   height: 32px;
   padding: 0 6px 0 12px;
@@ -56,7 +56,9 @@ body {
 
 .tab:hover { background: var(--tab-hover); }
 .tab.active { background: var(--bg); color: var(--fg); }
-.tab.dragging { opacity: .7; }
+/* Przeciąganie: sąsiednie karty rozsuwają się płynnie, przeciągana jest nad nimi, z cieniem */
+.tab { position: relative; transition: transform .15s ease; }
+.tab.dragging { z-index: 1; box-shadow: 0 2px 8px rgb(0 0 0 / .3); transition: transform .12s ease; }
 
 .tab-title {
   flex: 1;
@@ -92,6 +94,30 @@ body {
   color: var(--muted);
   font-size: 20px;
 }
+
+/* Lista wszystkich kart: przycisk jak „+”, menu z nazwą pliku i folderem */
+#tab-list-button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 30px;
+  margin-bottom: 1px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+}
+
+#tab-list-button:hover { background: var(--tab-hover); }
+#tab-list-button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+#tab-list { right: auto; left: 0; max-width: min(480px, 90vw); max-height: 60vh; overflow-y: auto; }
+#tab-list.menu-end { right: 0; left: auto; }
+#tab-list button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tab-list small { margin-left: 8px; color: var(--muted); font-size: 11px; }
+
+/* Menu karty pod prawym przyciskiem: w miejscu kursora */
+#tab-menu { position: fixed; top: 0; right: auto; font: 13px/1.4 var(--font-ui); }
+.menu button:disabled { color: var(--muted); background: none; opacity: .6; }
 
 /* Przyciski po prawej: wzory, wygląd, edycja */
 

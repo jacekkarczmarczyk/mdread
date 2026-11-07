@@ -12,6 +12,12 @@
 <nav id="tabbar">
   <div id="tabs" role="tablist"></div>
   <button id="new-tab" type="button" data-i18n-title="tab.open">+</button>
+  <div class="dropdown">
+    <button id="tab-list-button" type="button" data-i18n-title="tab.list" aria-haspopup="menu">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div id="tab-list" class="menu" role="menu" hidden></div>
+  </div>
   <div id="tools">
     <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/></svg>
@@ -63,6 +69,14 @@
     </button>
   </div>
 </nav>
+<div id="tab-menu" class="menu" role="menu" hidden>
+  <button type="button" role="menuitem" data-action="close" data-i18n="tab.closeThis"></button>
+  <button type="button" role="menuitem" data-action="closeOthers" data-i18n="tab.closeOthers"></button>
+  <button type="button" role="menuitem" data-action="closeLeft" data-i18n="tab.closeLeft"></button>
+  <button type="button" role="menuitem" data-action="closeRight" data-i18n="tab.closeRight"></button>
+  <hr>
+  <button type="button" role="menuitem" data-action="closeAll" data-i18n="tab.closeAll"></button>
+</div>
 <section id="installer" hidden>
   <form id="installer-form" class="installer-card">
     <h1 data-i18n="install.title"></h1>

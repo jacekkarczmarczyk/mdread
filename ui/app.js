@@ -80,6 +80,7 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   // Środkowy przycisk: bez autoprzewijania na mousedown, zamknięcie na auxclick.
   tab.addEventListener('mousedown', (event) => { if (event.button === 1) event.preventDefault(); });
   tab.addEventListener('auxclick', (event) => { if (event.button === 1) close(entry); });
+  tab.addEventListener('contextmenu', (event) => showTabMenu(entry, event));
   tab.addEventListener('pointerdown', (event) => { if (event.button === 0 && event.target !== closeButton) dragTab(entry, event); });
 
   tabsEl.append(tab);
@@ -505,21 +506,40 @@ function scrollToAnchor(entry, anchor) {
 }
 
 function close(entry) {
-  const index = tabs.indexOf(entry);
-  if (index < 0) return;
-  tabs.splice(index, 1);
-  entry.tab.remove();
-  entry.page.remove();
-  entry.bar?.remove();
-  entry.remoteBar?.remove();
-  post({ type: 'closed', path: entry.path });
-  if (tabs.length === 0) {
+  closeTabs([entry]);
+}
+
+// Zamyka karty (jedną albo kilka z menu karty) i zapisuje sesję raz. Zamknięcie ostatniej karty zamyka
+// okno jak w Notatniku; „Zamknij wszystkie” (keepWindow) zostawia puste okno jak VS Code.
+function closeTabs(list, keepWindow = false) {
+  const before = [...tabs];
+  for (const entry of list) {
+    const index = tabs.indexOf(entry);
+    if (index < 0) continue;
+    tabs.splice(index, 1);
+    entry.tab.remove();
+    entry.page.remove();
+    entry.bar?.remove();
+    entry.remoteBar?.remove();
+    post({ type: 'closed', path: entry.path });
+  }
+  if (tabs.length === 0 && !keepWindow) {
     // Najpierw pusta sesja (od razu, nie z opóźnieniem), potem zamknięcie okna.
     saveSession(true);
     post({ type: 'close' });
     return;
   }
-  if (active === entry) activate(tabs[Math.min(index, tabs.length - 1)]);
+  if (tabs.length === 0) {
+    active = null;
+    empty.hidden = false;
+    editTools.hidden = true;
+    mathToggle.hidden = true;
+    post({ type: 'active', path: null, title: null });
+  } else if (!tabs.includes(active)) {
+    // Następna karta za zamkniętą aktywną, a gdy jej nie ma, poprzednia.
+    const index = before.indexOf(active);
+    activate(before.slice(index).find((entry) => tabs.includes(entry)) ?? before.slice(0, index).findLast((entry) => tabs.includes(entry)));
+  }
   saveSession();
 }
 
@@ -529,36 +549,63 @@ function cycle(step) {
   activate(tabs[(index + step + tabs.length) % tabs.length]);
 }
 
-// Przeciąganie karty zmienia kolejność: karta przeskakuje, gdy kursor minie środek sąsiedniej.
+// Przeciąganie karty jak w Terminalu Windows i Chrome: karta jedzie za kursorem, sąsiednie rozsuwają się
+// (transform z animacją), gdy kursor minie ich środek; po puszczeniu karta dojeżdża na swoje miejsce.
 function dragTab(entry, down) {
+  const from = tabs.indexOf(entry);
   let dragging = false;
+  let slots, step, target = from, offset = 0;
+
+  const start = () => {
+    dragging = true;
+    activate(entry);
+    entry.tab.setPointerCapture(down.pointerId);
+    entry.tab.classList.add('dragging');
+    // Za kursorem bez opóźnienia; animacja wraca dopiero przy dojeździe po puszczeniu.
+    entry.tab.style.transition = 'none';
+    slots = tabs.map((other) => other.tab.getBoundingClientRect());
+    step = slots[from].width + (parseFloat(getComputedStyle(tabsEl).columnGap) || 0);
+  };
   const move = (event) => {
     if (!dragging && Math.abs(event.clientX - down.clientX) < 5) return;
-    if (!dragging) {
-      dragging = true;
-      entry.tab.classList.add('dragging');
-    }
-    const target = tabs.find((other) => {
-      const box = other.tab.getBoundingClientRect();
-      return other !== entry && event.clientX >= box.left && event.clientX < box.right;
+    if (!dragging) start();
+    // Karta nie wyjeżdża poza pierwszą i ostatnią pozycję.
+    const min = slots[0].left - slots[from].left;
+    const max = slots[slots.length - 1].right - slots[from].right;
+    offset = Math.min(max, Math.max(min, event.clientX - down.clientX));
+    entry.tab.style.transform = `translateX(${offset}px)`;
+    const center = slots[from].left + slots[from].width / 2 + offset;
+    target = tabs.filter((other, index) => index !== from && slots[index].left + slots[index].width / 2 < center).length;
+    tabs.forEach((other, index) => {
+      if (other === entry) return;
+      const shift = index > from && index <= target ? -step : index < from && index >= target ? step : 0;
+      other.tab.style.transform = shift ? `translateX(${shift}px)` : '';
     });
-    if (!target) return;
-    const box = target.tab.getBoundingClientRect();
-    const after = tabs.indexOf(target) > tabs.indexOf(entry);
-    if (after ? event.clientX < box.left + box.width / 2 : event.clientX > box.left + box.width / 2) return;
-    tabs.splice(tabs.indexOf(entry), 1);
-    tabs.splice(tabs.indexOf(target) + (after ? 1 : 0), 0, entry);
-    tabsEl.insertBefore(entry.tab, after ? target.tab.nextSibling : target.tab);
   };
-  const up = () => {
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
+  const end = () => {
+    entry.tab.removeEventListener('pointermove', move);
+    entry.tab.removeEventListener('pointerup', end);
+    entry.tab.removeEventListener('lostpointercapture', end);
     if (!dragging) return;
-    entry.tab.classList.remove('dragging');
-    saveSession();
+    dragging = false;
+    // Nowa kolejność w DOM bez animacji (sąsiednie karty już stoją na nowych miejscach), potem dojazd
+    // przeciąganej karty z miejsca, w którym ją puszczono.
+    const visual = slots[from].left + offset;
+    tabs.forEach((other) => { other.tab.style.transition = 'none'; other.tab.style.transform = ''; });
+    tabs.splice(from, 1);
+    tabs.splice(target, 0, entry);
+    tabsEl.insertBefore(entry.tab, tabs[target + 1]?.tab ?? null);
+    entry.tab.style.transform = `translateX(${visual - entry.tab.getBoundingClientRect().left}px)`;
+    entry.tab.getBoundingClientRect();
+    tabs.forEach((other) => { other.tab.style.transition = ''; });
+    entry.tab.style.transform = '';
+    entry.tab.addEventListener('transitionend', () => entry.tab.classList.remove('dragging'), { once: true });
+    if (!offset) entry.tab.classList.remove('dragging');
+    if (target !== from) saveSession();
   };
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', up);
+  entry.tab.addEventListener('pointermove', move);
+  entry.tab.addEventListener('pointerup', end);
+  entry.tab.addEventListener('lostpointercapture', end);
 }
 
 document.getElementById('help').addEventListener('click', () => post({ type: 'help' }));
@@ -700,6 +747,73 @@ const closeMenus = () => { for (const setOpen of menus) setOpen(false); };
 document.addEventListener('click', closeMenus);
 window.addEventListener('blur', closeMenus);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMenus(); });
+
+// Lista wszystkich kart (gdy nie mieszczą się na pasku): nazwa pliku i folder, żeby odróżnić np. kilka README.md.
+
+const tabListButton = document.getElementById('tab-list-button');
+const tabList = document.getElementById('tab-list');
+
+tabListButton.addEventListener('click', () => {
+  tabList.replaceChildren(...tabs.map((entry, index) => {
+    const item = Object.assign(document.createElement('button'), { type: 'button', title: entry.path });
+    item.setAttribute('role', 'menuitemradio');
+    item.setAttribute('aria-checked', String(entry === active));
+    item.dataset.index = index;
+    item.append(entry.title);
+    const folder = entry.path.split(/[\\/]/).at(-2);
+    if (folder) item.append(Object.assign(document.createElement('small'), { textContent: folder }));
+    return item;
+  }));
+  // Przy prawej połowie okna lista rozwija się w lewo, żeby nie wyjść poza krawędź.
+  tabList.classList.toggle('menu-end', tabListButton.getBoundingClientRect().left > innerWidth / 2);
+  requestAnimationFrame(() => tabList.querySelector('[aria-checked="true"]')?.scrollIntoView({ block: 'nearest' }));
+});
+dropdown(tabListButton, tabList, (item) => activate(tabs[item.dataset.index]));
+
+// Kółko myszy przewija pasek kart (ruch pionowy kółka zamieniony na poziomy).
+tabsEl.addEventListener('wheel', (event) => {
+  if (event.ctrlKey) return;
+  tabsEl.scrollLeft += event.deltaY || event.deltaX;
+  event.preventDefault();
+}, { passive: false });
+
+// Menu karty pod prawym przyciskiem (jak w VS Code i PhpStorm).
+
+const tabMenu = document.getElementById('tab-menu');
+let tabMenuEntry = null;
+menus.push((open) => { tabMenu.hidden = !open; });
+
+function showTabMenu(entry, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  closeMenus();
+  tabMenuEntry = entry;
+  const index = tabs.indexOf(entry);
+  const enabled = { closeOthers: tabs.length > 1, closeLeft: index > 0, closeRight: index < tabs.length - 1 };
+  for (const item of tabMenu.querySelectorAll('button')) item.disabled = enabled[item.dataset.action] === false;
+  tabMenu.hidden = false;
+  const box = tabMenu.getBoundingClientRect();
+  tabMenu.style.left = `${Math.min(event.clientX, innerWidth - box.width - 4)}px`;
+  tabMenu.style.top = `${Math.min(event.clientY, innerHeight - box.height - 4)}px`;
+}
+
+tabMenu.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const item = event.target.closest('button');
+  if (!item || item.disabled) return;
+  tabMenu.hidden = true;
+  const entry = tabMenuEntry;
+  const index = tabs.indexOf(entry);
+  if (index < 0) return;
+  const action = item.dataset.action;
+  if (action === 'close') return closeTabs([entry]);
+  if (action === 'closeAll') return closeTabs([...tabs], true);
+  // Jak w VS Code: karta, na której otwarto menu, zostaje aktywna.
+  if (action === 'closeOthers') closeTabs(tabs.filter((other) => other !== entry));
+  else if (action === 'closeLeft') closeTabs(tabs.slice(0, index));
+  else if (action === 'closeRight') closeTabs(tabs.slice(index + 1));
+  activate(entry);
+});
 
 dropdown(editMenuButton, editMenu, (item) => {
   const { action, path } = item.dataset;
