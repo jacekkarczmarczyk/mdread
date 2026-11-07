@@ -1,5 +1,5 @@
-# A tag like v0.1.0 builds mdread.exe and publishes a GitHub release with notes grouped by commit type
-# (Conventional Commits, see cliff.toml).
+# A tag like v0.1.0 builds mdread.exe and publishes a GitHub release. The first release gets a short note;
+# later ones list the commits since the previous tag, grouped by type (Conventional Commits, see cliff.toml).
 name: Release
 
 on:
@@ -21,11 +21,23 @@ jobs:
         run: |
           $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
           if ("v$version" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match Cargo.toml version $version" }
+      - name: Previous tag
+        id: previous
+        shell: pwsh
+        run: |
+          $previous = git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>$null
+          "first=$(if ($LASTEXITCODE -ne 0) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+          exit 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --locked
-      - name: Release notes
+      - name: Release notes (first release)
+        if: steps.previous.outputs.first == 'true'
+        shell: pwsh
+        run: Set-Content -Path RELEASE_NOTES.md -Value 'First public release.'
+      - name: Release notes (commits since the previous tag)
+        if: steps.previous.outputs.first != 'true'
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
