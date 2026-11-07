@@ -451,6 +451,20 @@ img { max-width: 100%; }
 
 .error { padding: 32px 40px; color: #d1242f; }
 
+/* Bar at the bottom of the window: a newer version is available */
+#update-bar { display: flex; flex: none; align-items: center; gap: 8px; padding: 6px 16px; border-top: 1px solid var(--border);
+  background: var(--tabbar-bg); font: 13px/1.4 var(--font-ui); }
+#update-bar[hidden] { display: none; }
+#update-bar > svg { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--link); stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+/* One line: a long message (e.g. an error) ends with an ellipsis, the full text is in the tooltip */
+#update-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#update-text a { color: var(--link); cursor: pointer; }
+#update-text.update-error { color: #d1242f; }
+:root[data-scheme="dark"] #update-text.update-error { color: #f85149; }
+#update-buttons { display: flex; flex: none; gap: 8px; }
+:root[data-installer] #update-bar { display: none; }
+
 /* Installer: small window with just the panel (the host sets data-installer on <html> from the first frame) */
 :root[data-installer] #tabbar, :root[data-installer] #file-bars, :root[data-installer] #workspace { display: none; }
 :root[data-installer] #installer[hidden] { display: block !important; }

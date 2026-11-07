@@ -28,7 +28,8 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 
 ### Tabs
 
-- One window; opening another file adds a tab. Tabs and reading positions are restored on the next start.
+- One window; opening another file adds a tab. Tabs, reading positions and the window's size, position and
+  maximized state are restored on the next start.
 - Drag to reorder, a list of all tabs, and a tab menu: close others / to the left / to the right / all,
   show in Explorer or Total Commander.
 
@@ -57,6 +58,15 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 - Links open with **Ctrl+click**: web pages in the browser, `.md` files in a new tab, other files in Explorer.
 - Remote images load only after a click, so opening a file doesn't tell anyone you read it.
 - Files from 2 MB ask before opening; above 20 MB they are offered to the editor instead.
+
+### Updates
+
+- The installed MDRead checks GitHub for a newer release at most once a day (gear menu →
+  **Check automatically**, on by default). The request carries only the version in its `User-Agent`.
+- A newer version shows a bar at the bottom of the window. **Install and restart** downloads `mdread.exe`
+  from the release, checks its SHA-256 against the digest GitHub publishes for the file, replaces the
+  installed copy once the running one has closed and starts it again with the same tabs.
+- Nothing is downloaded or run without that click; only HTTPS addresses of this repository are accepted.
 
 ## Installation
 
@@ -112,7 +122,8 @@ A debug build never shows the installer, so it opens an empty window when starte
 
 | Path | Contents |
 |---|---|
-| `%APPDATA%\mdread\settings.json` | theme, zoom, language, editors, open tabs, outline width and default |
+| `%APPDATA%\mdread\settings.json` | theme, zoom, language, editors, open tabs, window placement, outline width and default, update check |
+| `%TEMP%\mdread-update` | the downloaded new version during an update |
 | `%APPDATA%\mdread\help` | a copy of the help page, refreshed on every start |
 | `%LOCALAPPDATA%\mdread` | WebView2 data |
 

@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{assets, clipboard, editor, i18n, install, links, menu, settings, timing, unc, watcher, window};
+use crate::{assets, clipboard, editor, i18n, install, links, menu, settings, timing, unc, update, watcher, window};
 
 // `.localhost` resolves without DNS; with `.local` Windows queried mDNS and navigation took ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -47,10 +47,15 @@ thread_local! {
     static STATE: RefCell<State> = RefCell::default();
 }
 
+/// WebView2 user data folder (shared by all MDRead windows; the update waits for its browser to exit).
+pub fn data_dir() -> PathBuf {
+    PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join("mdread")
+}
+
 /// Starts creating the WebView2 environment for the `hwnd` window; further steps go through callbacks.
 pub fn start(hwnd: HWND) -> Result<()> {
     STATE.with_borrow_mut(|state| state.hwnd = hwnd);
-    let data_dir = std::env::var("LOCALAPPDATA").unwrap_or_default() + "\\mdread";
+    let data_dir = data_dir();
     let handler = CreateCoreWebView2EnvironmentCompletedHandler::create(Box::new(|result, env| {
         result.and_then(|()| env.ok_or_else(|| Error::from(E_POINTER))).and_then(on_environment).or_else(fatal)
     }));
@@ -59,7 +64,7 @@ pub fn start(hwnd: HWND) -> Result<()> {
     unsafe { options.set_language(i18n::locale().to_owned()) };
     let options: ICoreWebView2EnvironmentOptions = options.into();
     unsafe {
-        CreateCoreWebView2EnvironmentWithOptions(None, &HSTRING::from(data_dir), &options, &handler)
+        CreateCoreWebView2EnvironmentWithOptions(None, &HSTRING::from(data_dir.as_os_str()), &options, &handler)
     }
 }
 
@@ -270,6 +275,20 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 settings::set_outline_default(open);
             }
         }
+        Some("updateCheck") => {
+            if let Some(enabled) = message["enabled"].as_bool() {
+                settings::set_update_check(enabled);
+                if enabled {
+                    update::start(hwnd);
+                }
+            }
+        }
+        Some("updateDismiss") => {
+            if let Some(version) = message["version"].as_str() {
+                settings::set_update_dismissed(version);
+            }
+        }
+        Some("installUpdate") => update::download(hwnd),
         Some("outlineWidth") => {
             if let Some(width) = message["width"].as_u64() {
                 settings::set_outline_width(width);
@@ -426,6 +445,11 @@ fn with_appearance(html: &[u8]) -> String {
     let mut outline = settings::outline_width().map(|width| format!(" style=\"--outline-width: {width}px\"")).unwrap_or_default();
     if !settings::outline_default() {
         outline.push_str(" data-outline-default=\"0\"");
+    }
+    // Version and the update check switch for the gear menu.
+    outline.push_str(&format!(" data-version=\"{}\"", update::current_version()));
+    if !settings::update_check() {
+        outline.push_str(" data-update-check=\"0\"");
     }
     String::from_utf8_lossy(html).replacen(
         "<html lang=\"pl\">",

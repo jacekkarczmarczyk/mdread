@@ -113,6 +113,39 @@ pub fn set_notepad_hidden(hidden: bool) {
     save(&settings);
 }
 
+/// Whether to check GitHub for a newer version (on by default, switch in the gear menu).
+pub fn update_check() -> bool {
+    load().get("updateCheck").and_then(Value::as_bool).unwrap_or(true)
+}
+
+pub fn set_update_check(enabled: bool) {
+    let mut settings = load();
+    settings.insert("updateCheck".into(), Value::from(enabled));
+    save(&settings);
+}
+
+/// Result of the last update check (`version`, `page`, `asset`, `sha256`, `checkedAt` in Unix seconds).
+pub fn update_latest() -> Option<Value> {
+    load().get("updateLatest").cloned()
+}
+
+pub fn set_update_latest(latest: Value) {
+    let mut settings = load();
+    settings.insert("updateLatest".into(), latest);
+    save(&settings);
+}
+
+/// Version whose update bar the user hid ("Hide" until a newer one comes out).
+pub fn update_dismissed() -> Option<String> {
+    load().get("updateDismissed").and_then(Value::as_str).map(str::to_owned)
+}
+
+pub fn set_update_dismissed(version: &str) {
+    let mut settings = load();
+    settings.insert("updateDismissed".into(), Value::from(version));
+    save(&settings);
+}
+
 /// Main window at the last close: normal (restored) rectangle in workspace coordinates and whether it was maximized.
 pub struct WindowPlacement {
     pub left: i32,

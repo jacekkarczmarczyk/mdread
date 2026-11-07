@@ -28,7 +28,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
 use crate::i18n::t;
-use crate::{editor, instance, settings, watcher, webview};
+use crate::{editor, instance, settings, update, watcher, webview};
 
 pub const CLASS_NAME: PCWSTR = w!("mdread.window");
 
@@ -318,6 +318,26 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                     watcher::Event::Deleted(path) => ("fileDeleted", path),
                 };
                 webview::send(serde_json::json!({ "type": kind, "path": path }));
+            }
+            LRESULT(0)
+        }
+        update::WM_APP_UPDATE => {
+            for outcome in update::take() {
+                match outcome {
+                    update::Outcome::Checked(latest) => {
+                        if let Some(message) = update::checked(latest) {
+                            webview::send(message);
+                        }
+                    }
+                    // The downloaded version takes over: it waits for this process to exit, then replaces it.
+                    update::Outcome::Downloaded(path) => match update::launch(&path) {
+                        Ok(()) => request_close(hwnd),
+                        Err(error) => webview::send(serde_json::json!({ "type": "updateError", "message": error })),
+                    },
+                    update::Outcome::DownloadFailed(error) => {
+                        webview::send(serde_json::json!({ "type": "updateError", "message": error }));
+                    }
+                }
             }
             LRESULT(0)
         }

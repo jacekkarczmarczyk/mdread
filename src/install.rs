@@ -31,7 +31,7 @@ pub fn install_dir() -> PathBuf {
     PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join(r"Programs\MDRead")
 }
 
-fn installed_exe() -> PathBuf {
+pub fn installed_exe() -> PathBuf {
     install_dir().join("mdread.exe")
 }
 

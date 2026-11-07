@@ -15,6 +15,7 @@ mod markdown;
 mod settings;
 mod timing;
 mod unc;
+mod update;
 mod watcher;
 mod webview;
 mod window;
@@ -66,6 +67,10 @@ fn main() {
             wait_for_exit(pid);
         }
     }
+    // `--update`: a downloaded new version replaces the installed copy and starts it (see update.rs).
+    if flag(&args, "--update") {
+        return update::apply();
+    }
     let paths: Vec<PathBuf> = args
         .into_iter()
         .map(|arg| std::path::absolute(&arg).unwrap_or_else(|_| PathBuf::from(arg)))
@@ -113,6 +118,9 @@ fn main() {
     }
     // From now on the page saves the session (before this, every restored tab would mean a separate disk write).
     webview::send(json!({ "type": "startupDone" }));
+    if !installer {
+        update::start(hwnd);
+    }
     window::run_loop();
 }
 

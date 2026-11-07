@@ -995,6 +995,59 @@ function showOutlineDefault() {
 showOutlineDefault();
 let outlineItems = [];
 
+// Updates: the "Check automatically" switch (settings.json through <html data-update-check>, on by default) and
+// the bar at the bottom when the host reports a newer release. "Install" downloads it; the host then restarts.
+
+let updateCheck = document.documentElement.dataset.updateCheck !== '0';
+let availableUpdate = null;
+const updateBar = document.getElementById('update-bar');
+const updateText = document.getElementById('update-text');
+const updateButtons = document.getElementById('update-buttons');
+document.getElementById('update-section').textContent = t('update.section', { version: document.documentElement.dataset.version });
+
+function showUpdateCheck() {
+  document.querySelector('[data-update-check]').setAttribute('aria-checked', String(updateCheck));
+}
+showUpdateCheck();
+
+function showUpdate(update) {
+  availableUpdate = update;
+  const { version, current, page } = update;
+  const notes = Object.assign(document.createElement('a'), { textContent: t('update.whatsNew') });
+  notes.addEventListener('click', () => post({ type: 'link', url: page }));
+  updateText.replaceChildren(`${t('update.available', { version, current })} `, notes);
+  updateText.title = updateText.textContent;
+  updateText.classList.remove('update-error');
+  const install = iconButton(t('update.install'), 'install', () => {
+    install.disabled = true;
+    hide.disabled = true;
+    install.lastChild.textContent = t('update.downloading');
+    post({ type: 'installUpdate' });
+  });
+  install.classList.add('primary');
+  const hide = iconButton(t('update.hide'), 'close', () => {
+    updateBar.hidden = true;
+    post({ type: 'updateDismiss', version });
+  });
+  updateButtons.replaceChildren(install, hide);
+  updateBar.hidden = false;
+}
+
+function showUpdateError({ message }) {
+  if (availableUpdate) showUpdate(availableUpdate);
+  if (message === 'checksum' && availableUpdate) {
+    // "…than the release on GitHub", where "GitHub" links to the release page.
+    const [before, after] = t('update.failed', { message: t('update.badChecksum') }).split('{github}');
+    const github = Object.assign(document.createElement('a'), { textContent: t('update.githubLink') });
+    github.addEventListener('click', () => post({ type: 'link', url: availableUpdate.page }));
+    updateText.replaceChildren(before, github, after ?? '');
+  } else {
+    updateText.textContent = t('update.failed', { message });
+  }
+  updateText.title = updateText.textContent;
+  updateText.classList.add('update-error');
+}
+
 function toggleOutline(open = !active?.outlineOpen) {
   if (!active) return;
   active.outlineOpen = open;
@@ -1163,6 +1216,13 @@ dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) =>
     post({ type: 'help' });
     return;
   }
+  if ('updateCheck' in item.dataset) {
+    updateCheck = !updateCheck;
+    showUpdateCheck();
+    if (!updateCheck) updateBar.hidden = true;
+    post({ type: 'updateCheck', enabled: updateCheck });
+    return;
+  }
   if ('outlineDefault' in item.dataset) {
     outlineByDefault = !outlineByDefault;
     showOutlineDefault();
@@ -1302,6 +1362,8 @@ host.addEventListener('message', (event) => {
   else if (message.type === 'editors') showEditors(message);
   else if (message.type === 'installer') showInstaller(message);
   else if (message.type === 'installError') showInstallError(message);
+  else if (message.type === 'updateAvailable') showUpdate(message);
+  else if (message.type === 'updateError') showUpdateError(message);
   else if (message.type === 'totalCommander') {
     tabMenu.querySelector('[data-action="revealInTotalCommander"]').hidden = !message.available;
   }

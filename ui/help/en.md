@@ -8,7 +8,8 @@ You can come back to this page from the gear menu or with <kbd>F1</kbd>.
 ### Opening files
 
 Double-click a `.md` file (once MDRead is the default program), press <kbd>Ctrl</kbd>+<kbd>O</kbd>
-or drag the file onto the window. Each file gets a tab. Tabs come back the next time you start MDRead.
+or drag the file onto the window. Each file gets a tab. Tabs come back the next time you start MDRead,
+and so do the window's position and size.
 
 ### Arranging tabs
 
@@ -99,7 +100,14 @@ The right-click menu can copy the Markdown source of the whole file.
 ### Gear menu
 
 Theme (light, dark or same as Windows), language, whether new files open with the outline,
-and this help.
+the automatic update check and this help.
+
+### Updates
+
+The installed MDRead checks GitHub once a day for a newer version. If there is one, a bar at the bottom
+of the window offers **Install and restart**: the program downloads the new version, checks its checksum
+and starts again with the same tabs. Nothing is downloaded without that click. You can turn the check
+off in the gear menu.
 
 ### Editor
 

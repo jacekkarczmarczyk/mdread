@@ -8,7 +8,8 @@ Tę stronę otworzysz ponownie z menu zębatki albo klawiszem <kbd>F1</kbd>.
 ### Otwieranie
 
 Plik `.md` otworzysz dwuklikiem (gdy MDRead jest domyślnym programem), przez <kbd>Ctrl</kbd>+<kbd>O</kbd>
-albo przeciągając go do okna. Każdy plik dostaje kartę. Przy następnym uruchomieniu karty wracają.
+albo przeciągając go do okna. Każdy plik dostaje kartę. Przy następnym uruchomieniu wracają karty
+i okno w tym samym miejscu i rozmiarze.
 
 ### Układanie kart
 
@@ -100,7 +101,14 @@ Pod prawym przyciskiem myszy jest kopiowanie źródła Markdown całego pliku.
 ### Zębatka
 
 Motyw (jasny, ciemny albo jak w systemie), język, to, czy nowe pliki otwierają się ze spisem treści,
-i ta pomoc.
+automatyczne sprawdzanie aktualizacji i ta pomoc.
+
+### Aktualizacje
+
+Zainstalowany MDRead raz dziennie sprawdza na GitHubie, czy jest nowsza wersja. Jeśli jest, na dole okna
+pojawi się pasek z przyciskiem **Zainstaluj i uruchom ponownie**: program pobierze nową wersję, sprawdzi
+jej sumę kontrolną i uruchomi się od nowa z tymi samymi kartami. Bez kliknięcia nic nie jest pobierane.
+Sprawdzanie wyłączysz w zębatce.
 
 ### Edytor
 
