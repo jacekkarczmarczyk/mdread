@@ -349,7 +349,16 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #outline-list button.current, #outline-list button.in-view { color: var(--link); }
 /* A single bar on the left along all visible headings (top and height from app.js) */
 #outline-list { position: relative; }
-#outline-view { position: absolute; left: 6px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--link) 70%, transparent); pointer-events: none; }
+#outline-view {
+  position: absolute;
+  left: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--link) 70%, transparent);
+  pointer-events: none;
+  /* Slides and stretches along with the visible headings while scrolling */
+  transition: top .2s ease, height .2s ease;
+}
 .outline-empty { padding: 8px; color: var(--muted); }
 
 /* Right edge of the panel: a double line to grab (6 px grip, 1 px lines 2 px apart) */

@@ -1061,7 +1061,8 @@ function markCurrentHeading() {
   const rangeBottom = last.offsetTop + last.offsetHeight;
   outlineView.style.top = `${rangeTop}px`;
   outlineView.style.height = `${rangeBottom - rangeTop}px`;
-  outlineList.append(outlineView);
+  // Appended only after the list is rebuilt: moving the element on every scroll would restart its transition.
+  if (outlineView.parentNode !== outlineList) outlineList.append(outlineView);
   // The outline scrolls so that the whole marked range is visible (like "nearest" for the whole range); when it is
   // taller than the panel or sticks out at the top, the current heading goes to the top of the panel.
   const view = outlineList.clientHeight;
