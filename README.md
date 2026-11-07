@@ -130,3 +130,7 @@ Set `MDREAD_TIMING=<log file>` to write the timing of each startup step.
 
 MIT, see [LICENSE](LICENSE). The embedded libraries keep their own licenses: KaTeX (MIT), Mermaid (MIT),
 highlight.js (BSD-3-Clause); the gear icon follows the shape of Lucide's `settings` icon (ISC).
+
+GitHub, JetBrains, Visual Studio Code, Windows, Microsoft Word, Microsoft Teams and Total Commander are
+trademarks of their respective owners. MDRead is not affiliated with or endorsed by them; the theme names
+only describe the colour schemes the themes resemble.
