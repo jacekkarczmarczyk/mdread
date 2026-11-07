@@ -112,7 +112,7 @@ body {
 #tab-list-button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 #tab-list { right: auto; left: 0; max-width: min(480px, 90vw); max-height: 60vh; overflow-y: auto; }
 #tab-list.menu-end { right: 0; left: auto; }
-#tab-list button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tab-list button:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tab-list small { margin-left: 8px; color: var(--muted); font-size: 11px; }
 
 /* Menu karty pod prawym przyciskiem: w miejscu kursora */

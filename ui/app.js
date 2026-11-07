@@ -753,8 +753,10 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape') cl
 const tabListButton = document.getElementById('tab-list-button');
 const tabList = document.getElementById('tab-list');
 
-tabListButton.addEventListener('click', () => {
+function fillTabList() {
   tabList.replaceChildren(...tabs.map((entry, index) => {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
     const item = Object.assign(document.createElement('button'), { type: 'button', title: entry.path });
     item.setAttribute('role', 'menuitemradio');
     item.setAttribute('aria-checked', String(entry === active));
@@ -762,8 +764,25 @@ tabListButton.addEventListener('click', () => {
     item.append(entry.title);
     const folder = entry.path.split(/[\\/]/).at(-2);
     if (folder) item.append(Object.assign(document.createElement('small'), { textContent: folder }));
-    return item;
+    const remove = Object.assign(document.createElement('button'), { type: 'button', title: t('tab.close'), className: 'menu-remove' });
+    remove.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.close}"/></svg>`;
+    remove.dataset.close = index;
+    row.append(item, remove);
+    return row;
   }));
+}
+
+// „×” w liście zamyka kartę, a lista zostaje otwarta (przechwycone, zanim dropdown zamknie menu).
+tabList.addEventListener('click', (event) => {
+  const remove = event.target.closest('[data-close]');
+  if (!remove) return;
+  event.stopPropagation();
+  close(tabs[remove.dataset.close]);
+  if (tabs.length) fillTabList();
+}, true);
+
+tabListButton.addEventListener('click', () => {
+  fillTabList();
   // Przy prawej połowie okna lista rozwija się w lewo, żeby nie wyjść poza krawędź.
   tabList.classList.toggle('menu-end', tabListButton.getBoundingClientRect().left > innerWidth / 2);
   requestAnimationFrame(() => tabList.querySelector('[aria-checked="true"]')?.scrollIntoView({ block: 'nearest' }));
