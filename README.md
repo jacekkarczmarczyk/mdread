@@ -1,4 +1,4 @@
-# mdread
+# MDRead
 
 Szybka przeglądarka plików Markdown dla Windows: karty, jedna instancja, motywy jasne i ciemne,
 kopiowanie z formatowaniem albo jako tekst, wzory (KaTeX), diagramy (Mermaid), kolorowanie kodu,
@@ -26,7 +26,7 @@ mdread.exe --unregister          usuwa wpisy
 ```
 
 Rejestracja dotyczy tylko bieżącego użytkownika i nie wymaga uprawnień administratora. Windows nie pozwala
-programowi ustawić się jako domyślny: mdread pojawia się w „Otwórz za pomocą” i w Ustawieniach →
+programowi ustawić się jako domyślny: MDRead pojawia się w „Otwórz za pomocą” i w Ustawieniach →
 Aplikacje domyślne, gdzie wybiera się go ręcznie.
 
 Ustawienia (motyw, powiększenie, edytor): `%APPDATA%\mdread\settings.json`.

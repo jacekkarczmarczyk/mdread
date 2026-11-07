@@ -119,7 +119,7 @@ fn register(quiet: bool) {
         return;
     }
     let answer = unsafe {
-        MessageBoxW(None, &HSTRING::from(t("register.done")), w!("mdread"), MB_YESNO | MB_ICONINFORMATION)
+        MessageBoxW(None, &HSTRING::from(t("register.done")), w!("MDRead"), MB_YESNO | MB_ICONINFORMATION)
     };
     if answer == IDYES {
         unsafe {
@@ -179,7 +179,7 @@ fn file_name(path: &Path) -> String {
 /// Komunikat błędu nad oknem aplikacji (albo samodzielny, jeśli okna jeszcze nie ma).
 pub fn show_error(message: &str) {
     unsafe {
-        MessageBoxW(webview::window(), &HSTRING::from(message), w!("mdread"), MB_ICONERROR);
+        MessageBoxW(webview::window(), &HSTRING::from(message), w!("MDRead"), MB_ICONERROR);
     }
 }
 

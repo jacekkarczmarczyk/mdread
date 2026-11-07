@@ -63,8 +63,8 @@
   "error.fileMissing": "File does not exist:\n{path}",
   "error.editor": "Could not start the editor {program}.",
 
-  "register.failed": "Could not register mdread for Markdown files.",
-  "register.done": "mdread is registered for .md files and will appear in “Open with”.\n\nOpen Settings → Default apps to make it the default?",
+  "register.failed": "Could not register MDRead for Markdown files.",
+  "register.done": "MDRead is registered for .md files and will appear in “Open with”.\n\nOpen Settings → Default apps to make it the default?",
   "register.documentType": "Markdown document",
   "register.description": "Markdown file viewer"
 }

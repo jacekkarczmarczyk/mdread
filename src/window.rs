@@ -56,7 +56,7 @@ pub fn create() -> Result<HWND> {
         let hwnd = CreateWindowExW(
             WINDOW_EX_STYLE::default(),
             CLASS_NAME,
-            w!("mdread"),
+            w!("MDRead"),
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -118,8 +118,8 @@ pub fn run_loop() {
 
 pub fn set_title(hwnd: HWND, document: Option<&str>) {
     let title = match document {
-        Some(document) => format!("{document} - mdread"),
-        None => "mdread".to_owned(),
+        Some(document) => format!("{document} - MDRead"),
+        None => "MDRead".to_owned(),
     };
     unsafe {
         let _ = SetWindowTextW(hwnd, &HSTRING::from(title));

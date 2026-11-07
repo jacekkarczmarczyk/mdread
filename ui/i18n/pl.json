@@ -63,8 +63,8 @@
   "error.fileMissing": "Plik nie istnieje:\n{path}",
   "error.editor": "Nie udało się uruchomić edytora {program}.",
 
-  "register.failed": "Nie udało się zarejestrować mdread dla plików Markdown.",
-  "register.done": "mdread jest zarejestrowany dla plików .md i pojawi się w „Otwórz za pomocą”.\n\nOtworzyć Ustawienia → Aplikacje domyślne, żeby ustawić go jako domyślny?",
+  "register.failed": "Nie udało się zarejestrować MDRead dla plików Markdown.",
+  "register.done": "MDRead jest zarejestrowany dla plików .md i pojawi się w „Otwórz za pomocą”.\n\nOtworzyć Ustawienia → Aplikacje domyślne, żeby ustawić go jako domyślny?",
   "register.documentType": "Dokument Markdown",
   "register.description": "Przeglądarka plików Markdown"
 }

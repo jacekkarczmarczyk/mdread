@@ -14,8 +14,8 @@ fn windows_resources() {
     resource
         .set_icon_with_id("res/mdread.ico", "1")
         .set_manifest_file("res/mdread.manifest")
-        .set("FileDescription", "mdread - przeglądarka plików Markdown")
-        .set("ProductName", "mdread")
+        .set("FileDescription", "MDRead - przeglądarka plików Markdown")
+        .set("ProductName", "MDRead")
         .set("OriginalFilename", "mdread.exe");
     resource.compile().expect("zasoby Windows (rc.exe z Windows SDK)");
 }

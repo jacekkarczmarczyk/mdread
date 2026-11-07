@@ -28,10 +28,10 @@ pub fn register() -> Result<()> {
     set(&format!(r"{PROG_ID_KEY}\DefaultIcon"), None, &icon)?;
     set(&format!(r"{PROG_ID_KEY}\shell\open\command"), None, &command)?;
 
-    set(APPLICATION_KEY, Some("FriendlyAppName"), "mdread")?;
+    set(APPLICATION_KEY, Some("FriendlyAppName"), "MDRead")?;
     set(&format!(r"{APPLICATION_KEY}\shell\open\command"), None, &command)?;
 
-    set(CAPABILITIES_KEY, Some("ApplicationName"), "mdread")?;
+    set(CAPABILITIES_KEY, Some("ApplicationName"), "MDRead")?;
     set(CAPABILITIES_KEY, Some("ApplicationDescription"), &t("register.description"))?;
     for extension in EXTENSIONS {
         set(&format!(r"Software\Classes\{extension}\OpenWithProgids"), Some(PROG_ID), "")?;
