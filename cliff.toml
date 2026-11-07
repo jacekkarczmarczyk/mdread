@@ -17,6 +17,9 @@ trim = true
 conventional_commits = true
 filter_unconventional = false
 commit_parsers = [
+  # Version bumps and CI changes are not interesting in release notes.
+  { message = "^chore: release", skip = true },
+  { message = "^ci", skip = true },
   { message = "^feat", group = "<!-- 0 -->Features" },
   { message = "^fix", group = "<!-- 1 -->Bug fixes" },
   { message = "^docs", group = "<!-- 2 -->Documentation" },
