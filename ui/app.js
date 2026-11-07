@@ -532,11 +532,15 @@ const mathToggle = document.getElementById('math-toggle');
 const diagramToggle = document.getElementById('diagram-toggle');
 
 // Przełączniki widać tylko przy dokumencie, który ma wzory / diagramy; stan jest osobny dla każdej karty.
+// Niepotrzebny przełącznik jest niewidoczny, ale zajmuje miejsce: inaczej pasek narzędzi zmieniałby
+// szerokość przy przełączaniu kart, a karty by się zwężały i przesuwały.
 function showToggles(entry) {
-  mathToggle.hidden = !entry.hasMath;
+  mathToggle.hidden = false;
+  mathToggle.classList.toggle('unavailable', !entry.hasMath);
   mathToggle.setAttribute('aria-pressed', String(entry.mathOn));
   mathToggle.title = t(entry.mathOn ? 'math.on' : 'math.off');
-  diagramToggle.hidden = !entry.hasDiagrams;
+  diagramToggle.hidden = false;
+  diagramToggle.classList.toggle('unavailable', !entry.hasDiagrams);
   diagramToggle.setAttribute('aria-pressed', String(entry.diagramsOn));
   diagramToggle.title = t(entry.diagramsOn ? 'diagrams.on' : 'diagrams.off');
 }

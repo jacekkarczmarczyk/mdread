@@ -496,3 +496,4 @@ img { max-width: 100%; }
 .tool.toggle[aria-pressed="false"] svg { opacity: .45; }
 .tool.toggle[aria-pressed="true"] .off-slash { display: none; }
 .tool.toggle:disabled { cursor: progress; }
+.tool.toggle.unavailable { visibility: hidden; }
