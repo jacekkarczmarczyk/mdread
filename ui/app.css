@@ -166,7 +166,7 @@ body {
 .tool svg.icon-24 { stroke-width: 2.25; }
 
 /* Przyciski z samą ikoną: kwadratowe */
-#appearance-button, #help, #outline-toggle { padding: 0 7px; }
+#appearance-button { padding: 0 7px; }
 
 .menu {
   position: absolute;
@@ -354,7 +354,6 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #outline-resizer { position: absolute; top: 0; right: -3px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }
 #outline-resizer:hover, #outline-resizer.dragging { background: var(--link); opacity: .4; }
 
-#outline-toggle[aria-pressed="true"] { background: var(--tab-hover); }
 
 .page {
   position: absolute;
@@ -496,10 +495,20 @@ img { max-width: 100%; }
 /* Narysowany diagram zamiast kodu: pasek niepotrzebny */
 .code-header:has(+ .mermaid-diagram) { display: none; }
 
-/* Przełączniki diagramów i wzorów: wyłączony wyszarzony, z przekreśloną ikoną */
+/* Grupa przełączników spis / wzory / diagramy: sklejone przyciski jak „Edytuj ▾” */
+.button-group { display: flex; }
+.button-group > .tool { border-radius: 0; }
+.button-group > .tool:first-child { border-radius: 6px 0 0 6px; }
+.button-group > .tool:last-child { border-radius: 0 6px 6px 0; }
+.button-group > .tool + .tool { margin-left: -1px; }
+
+/* Trzy stany przełącznika: włączony (tło i ikona w kolorze linku), wyłączony (szara ikona, wzory i diagramy
+   przekreślone), niedostępny (ledwo widoczna ikona bez przekreślenia, bez reakcji) */
 .tool.toggle { padding: 0 7px; }
+.tool.toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--link) 16%, var(--bg)); color: var(--link); }
+.tool.toggle[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--link) 24%, var(--bg)); }
 .tool.toggle[aria-pressed="false"] { color: var(--muted); }
-.tool.toggle[aria-pressed="false"] svg { opacity: .45; }
-.tool.toggle[aria-pressed="true"] .off-slash { display: none; }
-.tool.toggle:disabled { cursor: progress; }
-.tool.toggle.unavailable { visibility: hidden; }
+.tool.toggle[aria-pressed="true"] .off-slash, .tool.toggle:disabled .off-slash { display: none; }
+.tool.toggle:disabled { background: var(--bg); color: var(--muted); cursor: default; }
+.tool.toggle:disabled svg { opacity: .25; }
+.tool.toggle.loading { cursor: progress; }

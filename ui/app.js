@@ -22,6 +22,7 @@ const empty = document.getElementById('empty');
 const fileBars = document.getElementById('file-bars');
 const editTools = document.getElementById('edit-tools');
 const tabListTools = document.getElementById('tab-list-tools');
+const viewToggles = document.getElementById('view-toggles');
 const outlineToggle = document.getElementById('outline-toggle');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
@@ -372,7 +373,7 @@ function activate(entry) {
   empty.hidden = true;
   editTools.hidden = false;
   tabListTools.hidden = false;
-  outlineToggle.hidden = false;
+  viewToggles.hidden = false;
   showToggles(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
@@ -531,35 +532,33 @@ async function rerenderDiagrams() {
 const mathToggle = document.getElementById('math-toggle');
 const diagramToggle = document.getElementById('diagram-toggle');
 
-// Przełączniki widać tylko przy dokumencie, który ma wzory / diagramy; stan jest osobny dla każdej karty.
-// Niepotrzebny przełącznik jest niewidoczny, ale zajmuje miejsce: inaczej pasek narzędzi zmieniałby
-// szerokość przy przełączaniu kart, a karty by się zwężały i przesuwały.
+// Przełączniki wzorów i diagramów; stan jest osobny dla każdej karty. Plik bez wzorów / diagramów ma przycisk
+// niedostępny (disabled), który dalej zajmuje miejsce: inaczej pasek zmieniałby szerokość przy przełączaniu
+// kart, a karty by się zwężały i przesuwały.
 function showToggles(entry) {
-  mathToggle.hidden = false;
-  mathToggle.classList.toggle('unavailable', !entry.hasMath);
-  mathToggle.setAttribute('aria-pressed', String(entry.mathOn));
-  mathToggle.title = t(entry.mathOn ? 'math.on' : 'math.off');
-  diagramToggle.hidden = false;
-  diagramToggle.classList.toggle('unavailable', !entry.hasDiagrams);
-  diagramToggle.setAttribute('aria-pressed', String(entry.diagramsOn));
-  diagramToggle.title = t(entry.diagramsOn ? 'diagrams.on' : 'diagrams.off');
+  mathToggle.disabled = !entry.hasMath;
+  mathToggle.setAttribute('aria-pressed', String(entry.hasMath && entry.mathOn));
+  mathToggle.title = t(!entry.hasMath ? 'math.none' : entry.mathOn ? 'math.on' : 'math.off');
+  diagramToggle.disabled = !entry.hasDiagrams;
+  diagramToggle.setAttribute('aria-pressed', String(entry.hasDiagrams && entry.diagramsOn));
+  diagramToggle.title = t(!entry.hasDiagrams ? 'diagrams.none' : entry.diagramsOn ? 'diagrams.on' : 'diagrams.off');
 }
 
 diagramToggle.addEventListener('click', async () => {
   const entry = active;
-  if (!entry) return;
+  if (!entry || diagramToggle.classList.contains('loading')) return;
   entry.diagramsOn = !entry.diagramsOn;
   entry.page.classList.toggle('diagrams-on', entry.diagramsOn);
   showToggles(entry);
   if (entry.diagramsOn && !entry.diagramsRendered) {
-    // Pierwsze włączenie: ładowanie Mermaida i rysowanie (chwilę trwa, przycisk w tym czasie nieaktywny).
-    diagramToggle.disabled = true;
+    // Pierwsze włączenie: ładowanie Mermaida i rysowanie (chwilę trwa, przycisk w tym czasie nie reaguje).
+    diagramToggle.classList.add('loading');
     try {
       await renderDiagrams(entry, entry.page.querySelectorAll('pre[lang="mermaid"]'));
     } catch (error) {
       console.error(error);
     } finally {
-      diagramToggle.disabled = false;
+      diagramToggle.classList.remove('loading');
     }
     return;
   }
@@ -619,9 +618,7 @@ function closeTabs(list, keepWindow = false) {
     empty.hidden = false;
     editTools.hidden = true;
     tabListTools.hidden = true;
-    outlineToggle.hidden = true;
-    mathToggle.hidden = true;
-    diagramToggle.hidden = true;
+    viewToggles.hidden = true;
     post({ type: 'active', path: null, title: null });
     updateOutline();
   } else if (!tabs.includes(active)) {
@@ -705,7 +702,6 @@ function dragTab(entry, down) {
   entry.tab.addEventListener('lostpointercapture', end);
 }
 
-document.getElementById('help').addEventListener('click', () => post({ type: 'help' }));
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'F1' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
@@ -1118,6 +1114,10 @@ function applyAppearance() {
 }
 
 dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) => {
+  if (item.dataset.action === 'help') {
+    post({ type: 'help' });
+    return;
+  }
   if ('outlineDefault' in item.dataset) {
     outlineByDefault = !outlineByDefault;
     showOutlineDefault();

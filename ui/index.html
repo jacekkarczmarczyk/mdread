@@ -19,16 +19,19 @@
     <div id="tab-list" class="menu" role="menu" hidden></div>
   </div>
   <div id="tools">
-    <!-- Przełączniki: wyłączony ma ikonę przekreśloną (.off-slash) -->
-    <button id="diagram-toggle" class="tool toggle" type="button" aria-pressed="false" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="9" y="9.5" width="5" height="4" rx="1"/><path d="M4.5 6.5v3a2 2 0 0 0 2 2H9"/><path class="off-slash" d="M2 2l12 12"/></svg>
-    </button>
-    <button id="math-toggle" class="tool toggle" type="button" aria-pressed="true" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/><path class="off-slash" d="M2 2l12 12"/></svg>
-    </button>
-    <button id="outline-toggle" class="tool" type="button" aria-pressed="false" data-i18n-title="outline.button" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M5 8h8.5M7.5 12h6M2.5 8h.01M2.5 12h.01M5 12h.01"/></svg>
-    </button>
+    <!-- Przełączniki jednej karty: włączony (aria-pressed=true), wyłączony (wzory i diagramy z przekreśloną
+         ikoną, .off-slash) albo niedostępny (disabled: plik nie ma wzorów / diagramów) -->
+    <div id="view-toggles" class="button-group" hidden>
+      <button id="outline-toggle" class="tool toggle" type="button" aria-pressed="false" data-i18n-title="outline.button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M5 8h8.5M7.5 12h6M2.5 8h.01M2.5 12h.01M5 12h.01"/></svg>
+      </button>
+      <button id="math-toggle" class="tool toggle" type="button" aria-pressed="true">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/><path class="off-slash" d="M2 2l12 12"/></svg>
+      </button>
+      <button id="diagram-toggle" class="tool toggle" type="button" aria-pressed="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="9" y="9.5" width="5" height="4" rx="1"/><path d="M4.5 6.5v3a2 2 0 0 0 2 2H9"/><path class="off-slash" d="M2 2l12 12"/></svg>
+      </button>
+    </div>
     <div id="edit-tools" class="dropdown split" hidden>
       <button id="edit" class="tool" type="button">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
@@ -70,11 +73,10 @@
         <hr>
         <div class="menu-label" data-i18n="outline.title"></div>
         <button type="button" role="menuitemcheckbox" data-outline-default data-i18n="outline.openByDefault"></button>
+        <hr>
+        <button type="button" role="menuitem" data-action="help" data-i18n="help.button"></button>
       </div>
     </div>
-    <button id="help" class="tool" type="button" data-i18n-title="help.button">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1v.3M8 11.3h.01"/></svg>
-    </button>
   </div>
 </nav>
 <div id="tab-menu" class="menu" role="menu" hidden>

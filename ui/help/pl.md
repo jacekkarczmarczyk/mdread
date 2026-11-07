@@ -1,7 +1,7 @@
 # MDRead
 
 Przeglądarka plików Markdown. Plików nie edytuje: przycisk **Edytuj** otwiera plik w innym programie.
-Tę stronę otworzysz ponownie przyciskiem **?** albo klawiszem <kbd>F1</kbd>.
+Tę stronę otworzysz ponownie z menu zębatki albo klawiszem <kbd>F1</kbd>.
 
 ## Pliki i karty
 
@@ -69,7 +69,11 @@ flowchart LR
 ```
 
 Diagramy (bloki `mermaid`) są najpierw pokazane jako kod. Rysuje je przycisk z ikoną schematu na pasku,
-a drugie kliknięcie wraca do kodu. Przekreślona ikona znaczy, że dana opcja jest wyłączona.
+a drugie kliknięcie wraca do kodu.
+
+Przyciski spisu treści, wzorów i diagramów są obok siebie przed **Edytuj**. Podświetlony przycisk
+oznacza opcję włączoną, przekreślona ikona wyłączoną, a ledwo widoczna, że w pliku nie ma wzorów
+albo diagramów.
 
 ### Obrazki z internetu
 
@@ -94,7 +98,8 @@ Pod prawym przyciskiem myszy jest kopiowanie źródła Markdown całego pliku.
 
 ### Zębatka
 
-Motyw (jasny, ciemny albo jak w systemie), język i to, czy nowe pliki otwierają się ze spisem treści.
+Motyw (jasny, ciemny albo jak w systemie), język, to, czy nowe pliki otwierają się ze spisem treści,
+i ta pomoc.
 
 ### Edytor
 

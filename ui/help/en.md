@@ -1,7 +1,7 @@
 # MDRead
 
 A Markdown file viewer. It doesn't edit files: the **Edit** button opens the file in another program.
-You can come back to this page with the **?** button or <kbd>F1</kbd>.
+You can come back to this page from the gear menu or with <kbd>F1</kbd>.
 
 ## Files and tabs
 
@@ -68,7 +68,11 @@ flowchart LR
 ```
 
 Diagrams (`mermaid` blocks) are first shown as code. The button with the diagram icon draws them,
-and a second click goes back to the code. A crossed-out icon means the option is off.
+and a second click goes back to the code.
+
+The outline, formula and diagram buttons sit next to each other before **Edit**. A highlighted button
+means the option is on, a crossed-out icon means it is off, and a barely visible one means the file
+has no formulas or diagrams.
 
 ### Images from the internet
 
@@ -93,7 +97,8 @@ The right-click menu can copy the Markdown source of the whole file.
 
 ### Gear menu
 
-Theme (light, dark or same as Windows), language and whether new files open with the outline.
+Theme (light, dark or same as Windows), language, whether new files open with the outline,
+and this help.
 
 ### Editor
 

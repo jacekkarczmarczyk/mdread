@@ -11,6 +11,8 @@
   "tab.revealInTotalCommander": "Pokaż w Total Commanderze",
   "empty": "Otwórz plik Markdown: <kbd>Ctrl</kbd>+<kbd>O</kbd> albo przeciągnij go tutaj.",
 
+  "math.none": "Brak wzorów w tym pliku",
+  "diagrams.none": "Brak diagramów Mermaid w tym pliku",
   "diagrams.on": "Diagramy Mermaid włączone — kliknij, aby pokazać kod",
   "diagrams.off": "Diagramy Mermaid pokazane jako kod — kliknij, aby je narysować",
   "math.on": "Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)",

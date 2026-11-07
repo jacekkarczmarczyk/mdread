@@ -11,6 +11,8 @@
   "tab.revealInTotalCommander": "Show in Total Commander",
   "empty": "Open a Markdown file: <kbd>Ctrl</kbd>+<kbd>O</kbd> or drag it here.",
 
+  "math.none": "No formulas in this file",
+  "diagrams.none": "No Mermaid diagrams in this file",
   "diagrams.on": "Mermaid diagrams on — click to show the code",
   "diagrams.off": "Mermaid diagrams shown as code — click to draw them",
   "math.on": "Math on — click to show the source text (e.g. when $ is a price)",
