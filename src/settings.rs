@@ -102,6 +102,17 @@ pub fn set_zoom(zoom: f64) {
     save(&settings);
 }
 
+/// Szerokość panelu spisu treści w pikselach CSS (wspólna dla wszystkich plików).
+pub fn outline_width() -> Option<u64> {
+    load().get("outlineWidth").and_then(Value::as_u64)
+}
+
+pub fn set_outline_width(width: u64) {
+    let mut settings = load();
+    settings.insert("outlineWidth".into(), Value::from(width));
+    save(&settings);
+}
+
 /// `#rrggbb` → COLORREF (0x00BBGGRR).
 pub fn parse_color(text: &str) -> Option<u32> {
     let hex = text.strip_prefix('#').filter(|hex| hex.len() == 6)?;

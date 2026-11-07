@@ -925,24 +925,16 @@ tabMenu.addEventListener('click', (event) => {
 });
 
 // Spis treści: nagłówki aktywnej karty w panelu z lewej. Otwarcie panelu i poziom są osobne dla każdej
-// karty i tylko w pamięci; szerokość wspólna, zapamiętana w localStorage (dane WebView2 w profilu użytkownika).
+// karty i tylko w pamięci; szerokość wspólna, w settings.json (host wstawia --outline-width do <html>).
 
 const outline = document.getElementById('outline');
 const outlineList = document.getElementById('outline-list');
 const outlineLevels = document.getElementById('outline-levels');
 const outlineResizer = document.getElementById('outline-resizer');
 
-function stored(key, fallback) {
-  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
-}
-
-function store(key, value) {
-  try { localStorage.setItem(key, String(value)); } catch { /* bez zapamiętania */ }
-}
-
-let outlineDepth = Number(stored('outline.depth', '3'));
+// Poziom dla nowo otwieranych kart: ostatnio wybrany, tylko do zamknięcia programu.
+let outlineDepth = 3;
 let outlineItems = [];
-outline.style.setProperty('--outline-width', `${Number(stored('outline.width', '260'))}px`);
 
 function toggleOutline(open = !active?.outlineOpen) {
   if (!active) return;
@@ -1013,7 +1005,6 @@ outlineLevels.addEventListener('click', (event) => {
   // poziom dla nowo otwieranych plików.
   outlineDepth = Number(button.dataset.depth);
   if (active) active.outlineDepth = outlineDepth;
-  store('outline.depth', outlineDepth);
   updateOutline();
 });
 
@@ -1034,7 +1025,7 @@ outlineResizer.addEventListener('pointerdown', (down) => {
     outlineResizer.removeEventListener('pointerup', end);
     outlineResizer.removeEventListener('lostpointercapture', end);
     outlineResizer.classList.remove('dragging');
-    store('outline.width', width);
+    if (width !== startWidth) post({ type: 'outlineWidth', width });
   };
   outlineResizer.addEventListener('pointermove', move);
   outlineResizer.addEventListener('pointerup', end);

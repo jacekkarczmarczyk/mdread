@@ -255,6 +255,11 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             }
         }
         Some("help") => crate::help::open(),
+        Some("outlineWidth") => {
+            if let Some(width) = message["width"].as_u64() {
+                settings::set_outline_width(width);
+            }
+        }
         Some("installerHeight") => {
             if let Some(height) = message["height"].as_f64() {
                 window::fit_client_height(hwnd, height.ceil() as i32);
@@ -402,10 +407,12 @@ fn with_appearance(html: &[u8]) -> String {
     let dark = if appearance.mode == "system" { window::system_dark() } else { appearance.mode == "dark" };
     let scheme = if dark { "dark" } else { "light" };
     let installer = if STATE.with_borrow(|state| state.installer) { " data-installer" } else { "" };
+    // Zapamiętana szerokość spisu treści od pierwszej klatki (zmienna CSS dziedziczona przez panel).
+    let outline = settings::outline_width().map(|width| format!(" style=\"--outline-width: {width}px\"")).unwrap_or_default();
     String::from_utf8_lossy(html).replacen(
         "<html lang=\"pl\">",
         &format!(
-            "<html lang=\"{}\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\"{installer}>",
+            "<html lang=\"{}\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\"{installer}{outline}>",
             i18n::current(),
             appearance.theme,
             appearance.mode
