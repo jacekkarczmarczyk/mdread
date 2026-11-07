@@ -26,6 +26,9 @@
     <button id="math-toggle" class="tool toggle" type="button" aria-pressed="true" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/><path class="off-slash" d="M2 2l12 12"/></svg>
     </button>
+    <button id="outline-toggle" class="tool" type="button" aria-pressed="false" data-i18n-title="outline.button" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M5 8h8.5M7.5 12h6M2.5 8h.01M2.5 12h.01M5 12h.01"/></svg>
+    </button>
     <div id="edit-tools" class="dropdown split" hidden>
       <button id="edit" class="tool" type="button">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
@@ -94,10 +97,28 @@
   </form>
 </section>
 <div id="file-bars"></div>
-<main id="docs">
-  <div id="empty">
-    <p data-i18n-html="empty"></p>
-  </div>
-</main>
+<div id="workspace">
+  <aside id="outline" hidden>
+    <div class="outline-header">
+      <span data-i18n="outline.title"></span>
+      <div id="outline-levels" role="group">
+        <button type="button" data-depth="1">H1</button>
+        <button type="button" data-depth="2">H2</button>
+        <button type="button" data-depth="3">H3</button>
+        <button type="button" data-depth="4">H4</button>
+      </div>
+      <button id="outline-close" class="outline-close" type="button" data-i18n-title="outline.close">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <nav id="outline-list"></nav>
+    <div id="outline-resizer" data-i18n-title="outline.resize"></div>
+  </aside>
+  <main id="docs">
+    <div id="empty">
+      <p data-i18n-html="empty"></p>
+    </div>
+  </main>
+</div>
 </body>
 </html>

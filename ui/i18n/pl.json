@@ -57,6 +57,12 @@
   "link.ctrlClick": "Ctrl+klik, aby otworzyć",
   "load.failed": "Nie udało się wczytać {src}",
   "mermaid.error": "Błąd diagramu: {message}",
+  "outline.button": "Spis treści (Ctrl+Shift+O)",
+  "outline.title": "Spis treści",
+  "outline.close": "Zamknij spis treści",
+  "outline.depth": "Pokaż nagłówki: {marks}",
+  "outline.empty": "Brak nagłówków",
+  "outline.resize": "Przeciągnij, aby zmienić szerokość",
   "code.copy": "Kopiuj",
   "code.copied": "Skopiowano",
 

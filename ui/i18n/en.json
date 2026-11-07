@@ -57,6 +57,12 @@
   "link.ctrlClick": "Ctrl+click to open",
   "load.failed": "Could not load {src}",
   "mermaid.error": "Diagram error: {message}",
+  "outline.button": "Outline (Ctrl+Shift+O)",
+  "outline.title": "Outline",
+  "outline.close": "Close outline",
+  "outline.depth": "Show headings: {marks}",
+  "outline.empty": "No headings",
+  "outline.resize": "Drag to change the width",
   "code.copy": "Copy",
   "code.copied": "Copied",
 

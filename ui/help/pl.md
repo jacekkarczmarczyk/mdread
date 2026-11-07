@@ -18,6 +18,7 @@ albo przeciągając go do okna. Każdy plik dostaje kartę. Przy następnym uruc
 | <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | karta nr 1–8, 9 to ostatnia |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | otwórz w edytorze |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | szukaj |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | spis treści (nagłówki) |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | kopiuj z formatowaniem |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | kopiuj sam tekst |
 | <kbd>Ctrl</kbd>+kółko, <kbd>Ctrl</kbd>+<kbd>0</kbd> | powiększenie, powrót do 100% |
@@ -50,6 +51,8 @@ na tekst źródłowy. Przekreślona ikona znaczy, że dana opcja jest wyłączon
 
 ## Inne
 
+- Spis treści otwiera się z lewej. H1–H4 wybiera, do którego poziomu nagłówków pokazywać listę,
+  a krawędź panelu można przeciągnąć.
 - **Edytuj ▾** pozwala wybrać program do edycji albo dodać własny.
 - Gdy plik zmieni się na dysku, nad treścią pojawi się pasek z przyciskiem **Odśwież**.
 - Zębatka: motyw (jasny, ciemny albo jak w systemie) i język.

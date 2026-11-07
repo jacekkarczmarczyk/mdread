@@ -18,6 +18,7 @@ or drag the file onto the window. Each file gets a tab. Tabs come back the next 
 | <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | tab 1–8, 9 is the last one |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | open in the editor |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | find |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | outline (headings) |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | copy with formatting |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> | copy text only |
 | <kbd>Ctrl</kbd>+wheel, <kbd>Ctrl</kbd>+<kbd>0</kbd> | zoom, back to 100% |
@@ -50,6 +51,8 @@ button switches to the source text. A crossed-out icon means the option is off.
 
 ## Other things
 
+- The outline opens on the left. H1–H4 sets how deep the list of headings goes,
+  and you can drag the panel's edge.
 - **Edit ▾** lets you pick the editing program or add your own.
 - When the file changes on disk, a bar with a **Reload** button shows up above the text.
 - The gear button: theme (light, dark or same as Windows) and language.

@@ -166,7 +166,7 @@ body {
 .tool svg.icon-24 { stroke-width: 2.25; }
 
 /* Przyciski z samą ikoną: kwadratowe */
-#appearance-button, #help { padding: 0 7px; }
+#appearance-button, #help, #outline-toggle { padding: 0 7px; }
 
 .menu {
   position: absolute;
@@ -273,11 +273,82 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 
 /* Dokumenty: każda karta przewija się osobno, więc pozycja zostaje przy przełączaniu */
 
+/* Spis treści z lewej i dokumenty obok */
+#workspace { display: flex; flex: 1; min-height: 0; }
+
 #docs {
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
 }
+
+/* Spis treści: szerokość zmieniana przeciągnięciem prawej krawędzi (--outline-width z app.js) */
+#outline {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--outline-width, 260px);
+  border-right: 1px solid var(--border);
+  background: var(--tabbar-bg);
+  font: 13px/1.4 var(--font-ui);
+}
+
+#outline[hidden] { display: none; }
+
+.outline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.outline-header > span { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+
+/* Poziomy H1–H4: zaznaczone wszystkie pokazywane (H3 = H1, H2 i H3) */
+#outline-levels { display: flex; flex: none; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+/* Stała szerokość: pogrubiony zaznaczony przycisk nie rozpycha grupy */
+#outline-levels button { width: 28px; height: 22px; padding: 0; border: 0; background: none; color: var(--muted); font: 12px var(--font-ui); }
+#outline-levels button + button { border-left: 1px solid var(--border); }
+#outline-levels button:hover { color: var(--fg); }
+#outline-levels button[aria-pressed="true"] { background: var(--bg); color: var(--fg); font-weight: 600; }
+
+.outline-close { display: grid; flex: none; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--muted); }
+.outline-close:hover { background: var(--tab-hover); color: var(--fg); }
+.outline-close svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+
+#outline-list { flex: 1; overflow: auto; padding: 6px; }
+
+#outline-list button {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#outline-list button:hover { background: var(--tab-hover); }
+#outline-list [data-rank="1"] { font-size: 15px; font-weight: 600; }
+#outline-list [data-rank="2"] { font-size: 14px; }
+#outline-list [data-rank="3"] { font-size: 13px; }
+#outline-list [data-rank="4"] { font-size: 12px; color: var(--muted); }
+#outline-list button.current { color: var(--link); box-shadow: inset 2px 0 var(--link); }
+.outline-empty { padding: 8px; color: var(--muted); }
+
+#outline-resizer { position: absolute; top: 0; right: -3px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }
+#outline-resizer:hover, #outline-resizer.dragging { background: var(--link); opacity: .4; }
+
+#outline-toggle[aria-pressed="true"] { background: var(--tab-hover); }
 
 .page {
   position: absolute;
@@ -354,7 +425,7 @@ img { max-width: 100%; }
 .error { padding: 32px 40px; color: #d1242f; }
 
 /* Instalator: małe okno z samym panelem (host wstawia data-installer do <html> od pierwszej klatki) */
-:root[data-installer] #tabbar, :root[data-installer] #file-bars, :root[data-installer] #docs { display: none; }
+:root[data-installer] #tabbar, :root[data-installer] #file-bars, :root[data-installer] #workspace { display: none; }
 :root[data-installer] #installer[hidden] { display: block !important; }
 
 #installer { flex: 1; overflow: auto; }

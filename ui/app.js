@@ -22,6 +22,7 @@ const empty = document.getElementById('empty');
 const fileBars = document.getElementById('file-bars');
 const editTools = document.getElementById('edit-tools');
 const tabListTools = document.getElementById('tab-list-tools');
+const outlineToggle = document.getElementById('outline-toggle');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
 const editMenu = document.getElementById('edit-menu');
@@ -347,7 +348,10 @@ function reloadDocument({ path, html, error, notice }) {
   entry.diagrams = [];
   entry.diagramsRendered = false;
   entry.hasDiagrams = content.querySelector('pre[lang="mermaid"]') !== null;
-  if (entry === active) showToggles(entry);
+  if (entry === active) {
+    showToggles(entry);
+    updateOutline();
+  }
   restoreReadingPosition(entry.page, position);
   // Wzory i diagramy zmieniają wysokość bloków, więc po ich narysowaniu jeszcze raz.
   enhance(entry).then(() => restoreReadingPosition(entry.page, position));
@@ -368,10 +372,12 @@ function activate(entry) {
   empty.hidden = true;
   editTools.hidden = false;
   tabListTools.hidden = false;
+  outlineToggle.hidden = false;
   showToggles(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
   post({ type: 'active', path: entry.path, title: entry.title });
+  updateOutline();
   applyPendingPosition(entry);
   saveSession();
 }
@@ -609,9 +615,11 @@ function closeTabs(list, keepWindow = false) {
     empty.hidden = false;
     editTools.hidden = true;
     tabListTools.hidden = true;
+    outlineToggle.hidden = true;
     mathToggle.hidden = true;
     diagramToggle.hidden = true;
     post({ type: 'active', path: null, title: null });
+    updateOutline();
   } else if (!tabs.includes(active)) {
     // Następna karta za zamkniętą aktywną, a gdy jej nie ma, poprzednia.
     const index = before.indexOf(active);
@@ -697,6 +705,7 @@ window.addEventListener('keydown', (event) => {
   const key = event.key.toLowerCase();
   let handled = true;
   if (key === 'c' && event.shiftKey) copySelectionAsText();
+  else if (key === 'o' && event.shiftKey) setOutlineOpen(!outlineOpen);
   else if (key === 'o') post({ type: 'openDialog' });
   else if (key === 'e') editActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
@@ -909,6 +918,124 @@ tabMenu.addEventListener('click', (event) => {
   else if (action === 'closeLeft') closeTabs(tabs.slice(0, index));
   else if (action === 'closeRight') closeTabs(tabs.slice(index + 1));
   activate(entry);
+});
+
+// Spis treści: nagłówki aktywnej karty w panelu z lewej. Otwarcie i szerokość są wspólne dla wszystkich
+// plików i zapamiętane w localStorage (dane WebView2 w profilu użytkownika); poziom osobno dla każdej karty.
+
+const outline = document.getElementById('outline');
+const outlineList = document.getElementById('outline-list');
+const outlineLevels = document.getElementById('outline-levels');
+const outlineResizer = document.getElementById('outline-resizer');
+
+function stored(key, fallback) {
+  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+function store(key, value) {
+  try { localStorage.setItem(key, String(value)); } catch { /* bez zapamiętania */ }
+}
+
+let outlineOpen = stored('outline.open', '0') === '1';
+let outlineDepth = Number(stored('outline.depth', '3'));
+let outlineItems = [];
+outline.style.setProperty('--outline-width', `${Number(stored('outline.width', '260'))}px`);
+
+function setOutlineOpen(open) {
+  outlineOpen = open;
+  store('outline.open', open ? '1' : '0');
+  updateOutline();
+}
+
+function updateOutline() {
+  const visible = outlineOpen && active !== null;
+  outline.hidden = !visible;
+  outlineToggle.setAttribute('aria-pressed', String(outlineOpen));
+  if (!visible) return;
+  const headings = [...active.content.querySelectorAll('h1, h2, h3, h4, h5, h6')];
+  const level = (heading) => Number(heading.tagName[1]);
+  // Przycisków poziomów tyle, ile poziomów (do 4) ma dokument; wybrany poziom ograniczony do nich.
+  const deepest = Math.min(4, Math.max(1, ...headings.map(level)));
+  const depth = Math.min(active.outlineDepth ?? outlineDepth, deepest);
+  for (const button of outlineLevels.children) {
+    const buttonDepth = Number(button.dataset.depth);
+    button.hidden = buttonDepth > deepest;
+    button.setAttribute('aria-pressed', String(buttonDepth <= depth));
+    button.title = t('outline.depth', { marks: ['#', '##', '###', '####'].slice(0, buttonDepth).join(', ') });
+  }
+  const shown = headings.filter((heading) => level(heading) <= depth);
+  const top = Math.min(...shown.map(level));
+  outlineItems = shown.map((heading) => {
+    const item = Object.assign(document.createElement('button'), { type: 'button', textContent: heading.textContent.trim() });
+    item.title = item.textContent;
+    item.style.paddingLeft = `${8 + (level(heading) - top) * 14}px`;
+    // Czcionka maleje z poziomem liczonym od najwyższego nagłówka w dokumencie.
+    item.dataset.rank = level(heading) - top + 1;
+    item.addEventListener('click', () => heading.scrollIntoView({ block: 'start' }));
+    return { heading, item };
+  });
+  outlineList.replaceChildren(...outlineItems.map(({ item }) => item));
+  if (!outlineItems.length) {
+    outlineList.append(Object.assign(document.createElement('div'), { className: 'outline-empty', textContent: t('outline.empty') }));
+  }
+  markCurrentHeading();
+}
+
+// Podświetlony nagłówek sekcji, którą właśnie widać (ostatni nagłówek nad górną krawędzią strony).
+function markCurrentHeading() {
+  if (outline.hidden || !active) return;
+  const top = active.page.getBoundingClientRect().top + 8;
+  let current = outlineItems[0];
+  for (const entry of outlineItems) {
+    if (entry.heading.getBoundingClientRect().top <= top) current = entry;
+    else break;
+  }
+  for (const { item } of outlineItems) item.classList.toggle('current', item === current?.item);
+  current?.item.scrollIntoView({ block: 'nearest' });
+}
+
+let outlineFrame = 0;
+docs.addEventListener('scroll', () => {
+  cancelAnimationFrame(outlineFrame);
+  outlineFrame = requestAnimationFrame(markCurrentHeading);
+}, true);
+
+outlineToggle.addEventListener('click', () => setOutlineOpen(!outlineOpen));
+document.getElementById('outline-close').addEventListener('click', () => setOutlineOpen(false));
+
+outlineLevels.addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  // Poziom zapamiętany dla tej karty (tylko do zamknięcia programu); ostatni wybór to też domyślny
+  // poziom dla nowo otwieranych plików.
+  outlineDepth = Number(button.dataset.depth);
+  if (active) active.outlineDepth = outlineDepth;
+  store('outline.depth', outlineDepth);
+  updateOutline();
+});
+
+// Przeciąganie prawej krawędzi panelu zmienia szerokość (180 px – połowa okna).
+outlineResizer.addEventListener('pointerdown', (down) => {
+  if (down.button !== 0) return;
+  down.preventDefault();
+  outlineResizer.setPointerCapture(down.pointerId);
+  outlineResizer.classList.add('dragging');
+  const startWidth = outline.getBoundingClientRect().width;
+  let width = startWidth;
+  const move = (event) => {
+    width = Math.round(Math.min(innerWidth / 2, Math.max(180, startWidth + event.clientX - down.clientX)));
+    outline.style.setProperty('--outline-width', `${width}px`);
+  };
+  const end = () => {
+    outlineResizer.removeEventListener('pointermove', move);
+    outlineResizer.removeEventListener('pointerup', end);
+    outlineResizer.removeEventListener('lostpointercapture', end);
+    outlineResizer.classList.remove('dragging');
+    store('outline.width', width);
+  };
+  outlineResizer.addEventListener('pointermove', move);
+  outlineResizer.addEventListener('pointerup', end);
+  outlineResizer.addEventListener('lostpointercapture', end);
 });
 
 dropdown(editMenuButton, editMenu, (item) => {
