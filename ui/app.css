@@ -220,20 +220,9 @@ body {
 .remote-image { max-width: 100%; cursor: pointer; overflow-wrap: anywhere; }
 .remote-image:hover { border-color: var(--link); color: var(--fg); }
 .remote-image.asking { cursor: default; border-style: solid; color: var(--fg); }
-.remote-image svg { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-
-.remote-image button {
-  height: 22px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-}
-
-.remote-image button.primary { border-color: var(--link); color: var(--link); }
-.remote-image button:hover { background: var(--tab-hover); }
+.remote-image > svg { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.remote-image.asking { padding: 4px 4px 4px 10px; }
+.remote-image .tool { font-size: 13px; }
 
 .tab.stale .tab-title::after { content: " ●"; color: var(--link); font-size: 10px; }
 

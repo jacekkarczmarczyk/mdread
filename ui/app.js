@@ -126,15 +126,14 @@ function askToLoad(placeholder) {
   placeholder.classList.add('asking');
   const question = document.createElement('span');
   question.textContent = `Wczytać obrazek z ${host}?`;
-  const load = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Pokaż', className: 'primary' });
-  const cancel = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Anuluj' });
-  load.addEventListener('click', (event) => {
+  const load = iconButton('Pokaż', 'image', (event) => {
     event.stopPropagation();
     const entry = tabs.find((tab) => tab.content.contains(placeholder));
     placeholder.replaceWith(remoteImages.get(placeholder));
     if (entry) updateRemoteBar(entry);
   });
-  cancel.addEventListener('click', (event) => {
+  load.classList.add('primary');
+  const cancel = iconButton('Anuluj', 'close', (event) => {
     event.stopPropagation();
     showPlaceholderAddress(placeholder);
   });
