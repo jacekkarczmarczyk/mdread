@@ -16,12 +16,19 @@ fn load() -> Map<String, Value> {
         .unwrap_or_default()
 }
 
+/// Zapis z wymuszeniem na dysk (`sync_all` = FlushFileBuffers), żeby po awarii systemu sesja i ustawienia
+/// nie zginęły w pamięci podręcznej Windows. Zapisy są rzadkie (zmiana karty, koniec przewijania).
 fn save(settings: &Map<String, Value>) {
+    use std::io::Write;
+
     let path = file();
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    let _ = std::fs::write(path, serde_json::to_vec_pretty(settings).unwrap_or_default());
+    if let Ok(mut file) = std::fs::File::create(path) {
+        let _ = file.write_all(&serde_json::to_vec_pretty(settings).unwrap_or_default());
+        let _ = file.sync_all();
+    }
 }
 
 pub const THEMES: &[&str] = &["github", "jetbrains", "vscode", "fluent", "reading"];

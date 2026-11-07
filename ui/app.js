@@ -91,7 +91,6 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
     entry.enhanced = true;
     applyPendingPosition(entry);
   });
-  saveSession();
 
   if (firstRender) {
     firstRender = false;
@@ -341,12 +340,15 @@ function activate(entry) {
   saveSession();
 }
 
-// Sesja (karty, pozycje, aktywna) do odtworzenia przy następnym uruchomieniu; zapis z opóźnieniem,
-// bo przewijanie zmienia pozycję wiele razy na sekundę.
+// Sesja (karty, pozycje, aktywna) do odtworzenia przy następnym uruchomieniu. Zmiana kart zapisuje od razu,
+// przewijanie z opóźnieniem (debounce: 0,4 s po ostatnim ruchu). Do końca startu (karty z poprzedniej sesji
+// i z argumentów) zapis jest wstrzymany; potem jeden zapis całości.
 
 let sessionTimer = null;
+let sessionReady = false;
 
-function saveSession(immediate = false) {
+function saveSession(immediate = true) {
+  if (!sessionReady) return;
   clearTimeout(sessionTimer);
   const save = () => post({
     type: 'session',
@@ -366,7 +368,7 @@ function applyPendingPosition(entry) {
   if (entry.enhanced) entry.pendingPosition = null;
 }
 
-docs.addEventListener('scroll', () => { if (active) saveSession(); }, true);
+docs.addEventListener('scroll', () => { if (active) saveSession(false); }, true);
 
 // Rozszerzenia: biblioteki ładowane dopiero, gdy dokument ich potrzebuje.
 
@@ -833,6 +835,10 @@ host.addEventListener('message', (event) => {
   else if (message.type === 'editors') showEditors(message);
   else if (message.type === 'installer') showInstaller(message);
   else if (message.type === 'installError') showInstallError(message);
+  else if (message.type === 'startupDone') {
+    sessionReady = true;
+    saveSession();
+  }
 });
 
 post({ type: 'ready' });

@@ -100,6 +100,8 @@ fn main() {
         restore_session();
     }
     open_paths(&paths);
+    // Od teraz strona zapisuje sesję (wcześniej każda odtwarzana karta oznaczałaby osobny zapis na dysk).
+    webview::send(json!({ "type": "startupDone" }));
     window::run_loop();
 }
 
