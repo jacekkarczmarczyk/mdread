@@ -255,6 +255,16 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             }
         }
         Some("help") => crate::help::open(),
+        Some("reveal") => {
+            if let Some(path) = message["path"].as_str() {
+                links::reveal(Path::new(path));
+            }
+        }
+        Some("revealInTotalCommander") => {
+            if let Some(path) = message["path"].as_str() {
+                links::reveal_in_total_commander(Path::new(path));
+            }
+        }
         Some("outlineWidth") => {
             if let Some(width) = message["width"].as_u64() {
                 settings::set_outline_width(width);

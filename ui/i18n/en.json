@@ -7,6 +7,8 @@
   "tab.closeLeft": "Close tabs to the left",
   "tab.closeRight": "Close tabs to the right",
   "tab.closeAll": "Close all",
+  "tab.reveal": "Show in Explorer",
+  "tab.revealInTotalCommander": "Show in Total Commander",
   "empty": "Open a Markdown file: <kbd>Ctrl</kbd>+<kbd>O</kbd> or drag it here.",
 
   "diagrams.on": "Mermaid diagrams on — click to show the code",

@@ -1,9 +1,11 @@
 //! Ctrl+klik w link: pliki Markdown w karcie, strony w przeglądarce, inne pliki w Eksploratorze.
+//! Też „Pokaż w Eksploratorze / Total Commanderze” z menu karty.
 
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 use windows::core::{HSTRING, w};
@@ -21,12 +23,34 @@ pub fn open(url: &str) {
         } else if is_markdown(&path) {
             crate::open_path(&path, anchor.as_deref());
         } else {
-            let _ = Command::new("explorer.exe").raw_arg(format!("/select,\"{}\"", path.display())).spawn();
+            reveal(&path);
         }
     } else if WEB_SCHEMES.iter().any(|scheme| url.starts_with(scheme)) {
         unsafe {
             ShellExecuteW(None, w!("open"), &HSTRING::from(url), None, None, SW_SHOWNORMAL);
         }
+    }
+}
+
+/// Eksplorator z zaznaczonym plikiem (też „Pokaż w Eksploratorze” z menu karty).
+pub fn reveal(path: &Path) {
+    let _ = Command::new("explorer.exe").raw_arg(format!("/select,\"{}\"", path.display())).spawn();
+}
+
+/// Total Commander, jeśli zainstalowany (katalog z wpisu instalatora Ghisler w rejestrze).
+pub fn total_commander() -> Option<PathBuf> {
+    [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE]
+        .into_iter()
+        .filter_map(|root| crate::editor::registry_path(root, r"Software\Ghisler\Total Commander", Some("InstallDir")))
+        .flat_map(|dir| [dir.join("TOTALCMD64.EXE"), dir.join("TOTALCMD.EXE")])
+        .find(|exe| exe.exists())
+}
+
+/// Total Commander z kursorem na pliku: w już otwartym oknie (/O), w nowej zakładce (/T) aktywnego panelu
+/// (/S: /L to panel aktywny).
+pub fn reveal_in_total_commander(path: &Path) {
+    if let Some(exe) = total_commander() {
+        let _ = Command::new(exe).args(["/O", "/T", "/S"]).raw_arg(format!("/L=\"{}\"", path.display())).spawn();
     }
 }
 

@@ -135,13 +135,18 @@ fn detected() -> Vec<PathBuf> {
 
 /// Ścieżka programu z „App Paths” (wpis tworzony przez instalatory, np. Notepad++).
 fn app_path(root: HKEY, exe: &str) -> Option<PathBuf> {
-    let key = HSTRING::from(format!(r"Software\Microsoft\Windows\CurrentVersion\App Paths\{exe}"));
+    registry_path(root, &format!(r"Software\Microsoft\Windows\CurrentVersion\App Paths\{exe}"), None)
+}
+
+/// Ścieżka zapisana w rejestrze (wartość `value`, domyślna gdy `None`), bez otaczających cudzysłowów.
+pub fn registry_path(root: HKEY, key: &str, value: Option<&str>) -> Option<PathBuf> {
+    let key = HSTRING::from(key);
+    let value = value.map(HSTRING::from);
+    let name = value.as_ref().map_or(PCWSTR::null(), |value| PCWSTR(value.as_ptr()));
     let mut buffer = vec![0u16; 1024];
     let mut size = (buffer.len() * 2) as u32;
     unsafe {
-        RegGetValueW(root, &key, PCWSTR::null(), RRF_RT_REG_SZ, None, Some(buffer.as_mut_ptr() as _), Some(&mut size))
-            .ok()
-            .ok()?;
+        RegGetValueW(root, &key, name, RRF_RT_REG_SZ, None, Some(buffer.as_mut_ptr() as _), Some(&mut size)).ok().ok()?;
     }
     let text = String::from_utf16_lossy(&buffer[..(size as usize / 2).saturating_sub(1)]);
     Some(PathBuf::from(text.trim_matches('"')))

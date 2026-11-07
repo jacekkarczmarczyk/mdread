@@ -7,6 +7,8 @@
   "tab.closeLeft": "Zamknij karty po lewej",
   "tab.closeRight": "Zamknij karty po prawej",
   "tab.closeAll": "Zamknij wszystkie",
+  "tab.reveal": "Pokaż w Eksploratorze",
+  "tab.revealInTotalCommander": "Pokaż w Total Commanderze",
   "empty": "Otwórz plik Markdown: <kbd>Ctrl</kbd>+<kbd>O</kbd> albo przeciągnij go tutaj.",
 
   "diagrams.on": "Diagramy Mermaid włączone — kliknij, aby pokazać kod",

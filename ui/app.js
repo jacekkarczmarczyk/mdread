@@ -640,15 +640,17 @@ function cycle(step) {
 
 // Przeciąganie karty jak w Terminalu Windows i Chrome: karta jedzie za kursorem, sąsiednie rozsuwają się
 // (transform z animacją), gdy kursor minie ich środek; po puszczeniu karta dojeżdża na swoje miejsce.
+// Karta przejmuje mysz od razu przy wciśnięciu: inaczej szybki ruch poza kartę przed progiem 5 px zostawiał
+// podpięte obsługi ze starą pozycją, które przy następnym przeciąganiu psuły kolejność kart.
 function dragTab(entry, down) {
   const from = tabs.indexOf(entry);
   let dragging = false;
   let slots, step, target = from, offset = 0;
+  entry.tab.setPointerCapture(down.pointerId);
 
   const start = () => {
     dragging = true;
     activate(entry);
-    entry.tab.setPointerCapture(down.pointerId);
     entry.tab.classList.add('dragging');
     // Za kursorem bez opóźnienia; animacja wraca dopiero przy dojeździe po puszczeniu.
     entry.tab.style.transition = 'none';
@@ -663,8 +665,14 @@ function dragTab(entry, down) {
     const max = slots[slots.length - 1].right - slots[from].right;
     offset = Math.min(max, Math.max(min, event.clientX - down.clientX));
     entry.tab.style.transform = `translateX(${offset}px)`;
-    const center = slots[from].left + slots[from].width / 2 + offset;
-    target = tabs.filter((other, index) => index !== from && slots[index].left + slots[index].width / 2 < center).length;
+    // Jak w Chrome: sąsiednia karta ustępuje, gdy minie jej środek krawędź przeciąganej (lewa przy ruchu
+    // w lewo, prawa w prawo). Porównanie środków nie pozwalało dojść na pierwsze i ostatnie miejsce.
+    const left = slots[from].left + offset;
+    const right = slots[from].right + offset;
+    const middle = (slot) => slot.left + slot.width / 2;
+    target = from
+      - slots.filter((slot, index) => index < from && left < middle(slot)).length
+      + slots.filter((slot, index) => index > from && right > middle(slot)).length;
     tabs.forEach((other, index) => {
       if (other === entry) return;
       const shift = index > from && index <= target ? -step : index < from && index >= target ? step : 0;
@@ -915,6 +923,7 @@ tabMenu.addEventListener('click', (event) => {
   const index = tabs.indexOf(entry);
   if (index < 0) return;
   const action = item.dataset.action;
+  if (action === 'reveal' || action === 'revealInTotalCommander') return post({ type: action, path: entry.path });
   if (action === 'close') return closeTabs([entry]);
   if (action === 'closeAll') return closeTabs([...tabs], true);
   // Jak w VS Code: karta, na której otwarto menu, zostaje aktywna.
@@ -1211,6 +1220,9 @@ host.addEventListener('message', (event) => {
   else if (message.type === 'editors') showEditors(message);
   else if (message.type === 'installer') showInstaller(message);
   else if (message.type === 'installError') showInstallError(message);
+  else if (message.type === 'totalCommander') {
+    tabMenu.querySelector('[data-action="revealInTotalCommander"]').hidden = !message.available;
+  }
   else if (message.type === 'startupDone') {
     sessionReady = true;
     saveSession();
