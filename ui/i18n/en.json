@@ -69,6 +69,8 @@
   "outline.empty": "No headings",
   "outline.openByDefault": "Open for new files",
   "outline.resize": "Drag to change the width",
+  "code.wrap": "Wrap",
+  "code.wrapTitle": "Wrap long lines in this block",
   "code.copy": "Copy",
   "code.copied": "Copied",
 

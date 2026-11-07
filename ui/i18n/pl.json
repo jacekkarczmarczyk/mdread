@@ -69,6 +69,8 @@
   "outline.empty": "Brak nagłówków",
   "outline.openByDefault": "Otwieraj przy nowych plikach",
   "outline.resize": "Przeciągnij, aby zmienić szerokość",
+  "code.wrap": "Zawijaj",
+  "code.wrapTitle": "Zawijaj długie wiersze w tym bloku",
   "code.copy": "Kopiuj",
   "code.copied": "Skopiowano",
 

@@ -170,13 +170,35 @@ function translateAlertTitles(root) {
   }
 }
 
-// Pasek nad blokiem kodu: język i „Kopiuj”. Osobny element przed <pre> (nie opakowanie), żeby <pre> zostało
-// blokiem pozycji czytania; narysowany diagram Mermaid podmienia samo <pre>, a pasek chowa wtedy CSS.
+// „Zawijaj” jest nieaktywny, gdy blok mieści się na szerokość (bez poziomego paska); sprawdzane przy każdej
+// zmianie szerokości bloku (okno, spis treści, powiększenie, pokazanie karty). Zawinięty blok zawsze da się
+// odwinąć.
+const codeWidths = new ResizeObserver((entries) => {
+  for (const { target } of entries) updateWrapButton(target);
+});
+
+function updateWrapButton(pre) {
+  const button = pre.previousElementSibling?.querySelector('[data-wrap]');
+  if (button) button.disabled = !pre.classList.contains('wrap') && pre.scrollWidth <= pre.clientWidth;
+}
+
+// Pasek nad blokiem kodu: język, „Zawijaj” (długie wiersze tego bloku) i „Kopiuj”. Osobny element przed <pre>
+// (nie opakowanie), żeby <pre> zostało blokiem pozycji czytania; narysowany diagram Mermaid podmienia samo <pre>,
+// a pasek chowa wtedy CSS.
 function addCodeHeaders(root) {
   for (const pre of root.querySelectorAll('pre:not([data-math-style])')) {
     const header = document.createElement('div');
     header.className = 'code-header';
     const language = Object.assign(document.createElement('span'), { textContent: pre.getAttribute('lang') ?? '' });
+    const wrap = iconButton(t('code.wrap'), 'wrap', () => {
+      const on = pre.classList.toggle('wrap');
+      wrap.setAttribute('aria-pressed', String(on));
+      updateWrapButton(pre);
+    });
+    wrap.dataset.wrap = '';
+    wrap.setAttribute('aria-pressed', 'false');
+    wrap.title = t('code.wrapTitle');
+    codeWidths.observe(pre);
     const copy = iconButton('', 'copy', () => {
       post({ type: 'copyText', text: pre.textContent });
       showCopyState(copy, true);
@@ -184,7 +206,10 @@ function addCodeHeaders(root) {
       copy.timer = setTimeout(() => showCopyState(copy, false), 1500);
     });
     showCopyState(copy, false);
-    header.append(language, copy);
+    const buttons = document.createElement('span');
+    buttons.className = 'code-buttons';
+    buttons.append(wrap, copy);
+    header.append(language, buttons);
     pre.before(header);
   }
 }
@@ -274,6 +299,7 @@ const ICONS = {
   edit: 'M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3',
   install: 'M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13.5h10',
   copy: 'M5.5 5.5h8v8h-8zM2.5 10.5v-8h8',
+  wrap: 'M2.5 4h11M2.5 8h9a2 2 0 0 1 0 4H8M9.5 10.5L8 12l1.5 1.5M2.5 12h3',
 };
 
 function iconButton(label, icon, action) {
@@ -341,6 +367,7 @@ function reloadDocument({ path, html, error, notice }) {
   const position = readingPosition(entry.page);
   hideFileBar(entry);
   const content = documentContent(path, html, error, entry.remoteAllowed, notice);
+  for (const pre of entry.content.querySelectorAll('pre')) codeWidths.unobserve(pre);
   entry.content.replaceWith(content);
   entry.content = content;
   updateRemoteBar(entry);
@@ -586,7 +613,9 @@ function selectAllInActive() {
 
 function scrollToAnchor(entry, anchor) {
   const id = CSS.escape(decodeURIComponent(anchor));
-  entry.page.querySelector(`[id="${id}"], [name="${id}"]`)?.scrollIntoView({ block: 'start' });
+  // Identyfikatory z dokumentu mają przedrostek „user-content-” (markdown.rs: CONTENT_ID_PREFIX), żeby nie
+  // zderzały się z interfejsem; kotwice w linkach są bez niego.
+  entry.page.querySelector(`[id="user-content-${id}"], [name="${id}"]`)?.scrollIntoView({ block: 'start' });
 }
 
 function close(entry) {
@@ -602,6 +631,7 @@ function closeTabs(list, keepWindow = false) {
     if (index < 0) continue;
     tabs.splice(index, 1);
     entry.tab.remove();
+    for (const pre of entry.page.querySelectorAll('pre')) codeWidths.unobserve(pre);
     entry.page.remove();
     entry.bar?.remove();
     entry.remoteBar?.remove();

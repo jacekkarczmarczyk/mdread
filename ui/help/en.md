@@ -87,7 +87,8 @@ has normal colours. Formulas are copied as source, e.g. `$E = mc^2$`.
 
 ### Code blocks
 
-Each code block has a **Copy** button that copies the code without the rest of the page.
+Each code block has a **Copy** button that copies the code without the rest of the page, and a **Wrap**
+button that breaks long lines of that block instead of scrolling them sideways.
 
 ### Whole file
 

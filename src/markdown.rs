@@ -6,6 +6,9 @@ use comrak::{Arena, Options, format_html, parse_document};
 /// Pod tym adresem strona dostaje lokalne pliki (obrazki), a linki do plików niosą ścieżkę.
 pub const LOCAL_PREFIX: &str = "https://mdread.localhost/local/";
 
+/// Przedrostek identyfikatorów z dokumentu (ten sam w ui/app.js przy szukaniu kotwic).
+const CONTENT_ID_PREFIX: &str = "user-content-";
+
 /// Renderuje Markdown; względne adresy linków i obrazków rozwiązuje względem `base_dir`.
 /// Surowy HTML z pliku zostaje, ale całość przechodzi przez [`sanitizer`].
 pub fn render(source: &str, base_dir: &Path) -> String {
@@ -36,6 +39,10 @@ fn sanitizer(base_dir: PathBuf) -> ammonia::Builder<'static> {
         ])
         .add_tag_attributes("input", ["type", "checked", "disabled"])
         .add_tag_attributes("details", ["open"])
+        // Identyfikatory z dokumentu (nagłówki, przypisy, surowy HTML) z przedrostkiem jak na GitHubie, żeby nie
+        // zderzyły się z elementami interfejsu (np. nagłówek „Tab menu” → id „tab-menu” łapał styl menu karty).
+        // Kotwice #x strona szuka pod CONTENT_ID_PREFIX + x.
+        .id_prefix(Some(CONTENT_ID_PREFIX))
         // Względne adresy w surowym HTML (np. <img src="img/x.png">) tak samo jak w składni Markdown.
         .attribute_filter(move |_element, attribute, value| match attribute {
             "src" | "href" => Some(local_url(value, &base_dir).map_or(value.into(), Into::into)),
@@ -195,7 +202,7 @@ mod tests {
     fn keeps_app_markup() {
         let html = html("# Tytuł\n\n- [x] zrobione\n\n$x$\n\n```mermaid\na\n```\n\n> [!NOTE]\n> uwaga\n\nprzypis[^1]\n\n[^1]: treść");
         for needed in [
-            "id=\"tytuł\"", "data-sourcepos", "type=\"checkbox\"", "data-math-style", "lang=\"mermaid\"",
+            "id=\"user-content-tytuł\"", "data-sourcepos", "type=\"checkbox\"", "data-math-style", "lang=\"mermaid\"",
             "markdown-alert-note", "data-footnote-ref",
         ] {
             assert!(html.contains(needed), "{needed}: {html}");

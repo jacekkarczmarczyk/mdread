@@ -294,7 +294,6 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
   flex: none;
   flex-direction: column;
   width: var(--outline-width, 260px);
-  border-right: 1px solid var(--border);
   background: var(--tabbar-bg);
   font: 13px/1.4 var(--font-ui);
 }
@@ -353,8 +352,20 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #outline-view { position: absolute; left: 6px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--link) 70%, transparent); pointer-events: none; }
 .outline-empty { padding: 8px; color: var(--muted); }
 
-#outline-resizer { position: absolute; top: 0; right: -3px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }
-#outline-resizer:hover, #outline-resizer.dragging { background: var(--link); opacity: .4; }
+/* Prawa krawędź panelu: podwójna linia, za którą się chwyta (6 px na chwyt, linie 1 px w odstępie 2 px) */
+#outline-resizer { position: absolute; top: 0; right: -6px; bottom: 0; z-index: 2; width: 6px; cursor: col-resize; }
+#outline-resizer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  box-sizing: border-box;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+#outline-resizer:hover::before, #outline-resizer.dragging::before { border-color: var(--link); }
 
 
 .page {
@@ -492,8 +503,14 @@ img { max-width: 100%; }
 }
 
 .code-header + pre { border-radius: 0 0 var(--code-radius) var(--code-radius); }
+.code-buttons { display: flex; gap: 2px; }
+/* „Zawijaj”: długie wiersze tego bloku łamią się zamiast przewijać w poziomie */
+pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .code-header .tool { height: 22px; padding: 0 6px; border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
-.code-header .tool:hover { border-color: var(--border); color: var(--fg); }
+/* Najechanie tylko na aktywne przyciski; włączony „Zawijaj” zostaje niebieski także pod kursorem */
+.code-header .tool:hover:not(:disabled) { border-color: var(--border); color: var(--fg); }
+.code-header .tool[aria-pressed="true"], .code-header .tool[aria-pressed="true"]:hover { color: var(--link); }
+.code-header .tool:disabled { cursor: default; }
 /* Narysowany diagram zamiast kodu: pasek niepotrzebny */
 .code-header:has(+ .mermaid-diagram) { display: none; }
 

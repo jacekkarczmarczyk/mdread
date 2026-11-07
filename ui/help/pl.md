@@ -88,7 +88,8 @@ czy Teams tekst ma zwykłe kolory. Wzory kopiują się jako źródło, np. `$E =
 
 ### Bloki kodu
 
-Nad każdym blokiem kodu jest przycisk **Kopiuj**, który bierze sam kod.
+Nad każdym blokiem kodu jest przycisk **Kopiuj**, który bierze sam kod, i **Zawijaj**, który łamie
+długie wiersze tego bloku zamiast przewijać je w poziomie.
 
 ### Cały plik
 
