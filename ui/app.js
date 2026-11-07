@@ -94,7 +94,7 @@ function findTab(path) {
 
 // Zmiany pliku na dysku: pasek nad dokumentem i kropka na karcie; treść zmienia się dopiero po „Odśwież”.
 
-// Ikony przycisków paska (obrys 16×16, kolor z tekstu przycisku).
+// Ikony przycisków paska pliku, w tym samym stylu co w index.html (obrys 16×16, kolor z tekstu przycisku).
 const ICONS = {
   refresh: 'M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3',
   ignore: 'M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4zM6.5 8a1.5 1.5 0 0 0 3 0M2.5 2.5l11 11',
@@ -103,7 +103,7 @@ const ICONS = {
 };
 
 function iconButton(label, icon, action) {
-  const button = Object.assign(document.createElement('button'), { type: 'button' });
+  const button = Object.assign(document.createElement('button'), { type: 'button', className: 'tool' });
   button.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
   button.append(label);
   button.addEventListener('click', action);
@@ -120,6 +120,7 @@ function showFileBar(entry, kind) {
       iconButton('Ignoruj', 'ignore', () => hideFileBar(entry))]
     : [iconButton('Zamknij kartę', 'close', () => close(entry)), iconButton('Zostaw', 'keep', () => hideFileBar(entry))];
   text.textContent = kind === 'changed' ? 'Plik został zmieniony na dysku.' : 'Plik został usunięty z dysku.';
+  buttons[0].classList.add('primary');
   bar.append(text, ...buttons);
   // Pasek leży nad obszarem przewijania, więc przesuwa dokument zamiast zasłaniać czytane miejsce.
   bar.hidden = entry !== active;

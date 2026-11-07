@@ -1,9 +1,26 @@
-//! Generuje tabelę zasobów UI wbudowanych w exe (wszystkie pliki z `ui/` poza licencjami).
+//! Zasoby exe: ikona, manifest i wersja (Windows) oraz tabela plików UI z `ui/` (poza licencjami).
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() {
+    windows_resources();
+    ui_assets();
+}
+
+fn windows_resources() {
+    println!("cargo:rerun-if-changed=res");
+    let mut resource = winresource::WindowsResource::new();
+    resource
+        .set_icon_with_id("res/mdread.ico", "1")
+        .set_manifest_file("res/mdread.manifest")
+        .set("FileDescription", "mdread - przeglądarka plików Markdown")
+        .set("ProductName", "mdread")
+        .set("OriginalFilename", "mdread.exe");
+    resource.compile().expect("zasoby Windows (rc.exe z Windows SDK)");
+}
+
+fn ui_assets() {
     println!("cargo:rerun-if-changed=ui");
     let ui = fs::canonicalize("ui").expect("katalog ui");
     let mut files = Vec::new();

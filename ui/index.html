@@ -11,10 +11,13 @@
   <div id="tabs" role="tablist"></div>
   <button id="new-tab" type="button" title="Otwórz plik (Ctrl+O)">+</button>
   <div id="tools">
-    <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>∑ Wzory</button>
+    <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/></svg>
+      Wzory
+    </button>
     <div class="dropdown">
       <button id="appearance-button" class="tool" type="button" title="Wygląd" aria-haspopup="menu">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13c.9 0 1.4-.6 1.4-1.3 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.7.6-1.3 1.3-1.3h1.6c1.7 0 3-1.3 3-3C14.5 4 11.6 1.5 8 1.5zM4.5 8.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2-3a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2 3a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2a6 6 0 1 0 0 12c.8 0 1.2-.5 1.2-1.1 0-.7-.6-1-.6-1.7 0-.7.5-1.2 1.2-1.2H11a3 3 0 0 0 3-3C14 4.4 11.3 2 8 2zM5 8h.01M6.5 5h.01M9.5 5h.01M11 7.5h.01"/></svg>
         Wygląd
       </button>
       <div id="appearance-menu" class="menu" role="menu" hidden>
@@ -33,11 +36,11 @@
     </div>
     <div id="edit-tools" class="dropdown split" hidden>
       <button id="edit" class="tool" type="button">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 1.8a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L5.6 13.1l-3.4.9.9-3.4z"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
         Edytuj
       </button>
       <button id="edit-menu-button" class="tool" type="button" title="Wybierz edytor" aria-haspopup="menu">
-        <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
       </button>
       <div id="edit-menu" class="menu" role="menu" hidden>
         <button type="button" role="menuitemradio" data-action="resetEditor">Notatnik</button>

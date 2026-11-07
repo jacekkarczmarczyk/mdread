@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 
 mod assets;
+mod assoc;
 mod clipboard;
 mod editor;
 mod instance;
@@ -18,13 +19,24 @@ use std::path::{Path, PathBuf};
 use serde_json::{Value, json};
 use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx};
 use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, SetProcessDpiAwarenessContext};
-use windows::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MessageBoxW};
+use windows::Win32::UI::Shell::ShellExecuteW;
+use windows::Win32::UI::WindowsAndMessaging::{
+    IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_YESNO, MessageBoxW, SW_SHOWNORMAL,
+};
 use windows::core::{HSTRING, w};
 
 fn main() {
     timing::mark("main");
-    let paths: Vec<PathBuf> = std::env::args_os()
-        .skip(1)
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let flag = |name: &str| args.iter().any(|arg| arg == name);
+    if flag("--register") {
+        return register(flag("--quiet"));
+    }
+    if flag("--unregister") {
+        return assoc::unregister();
+    }
+    let paths: Vec<PathBuf> = args
+        .into_iter()
         .map(|arg| std::path::absolute(&arg).unwrap_or_else(|_| PathBuf::from(arg)))
         .collect();
     if !instance::claim(&paths) {
@@ -52,6 +64,33 @@ fn main() {
     webview::send(editor::info());
     open_paths(&paths);
     window::run_loop();
+}
+
+/// `mdread.exe --register [--quiet]`: wpisy w rejestrze i (bez `--quiet`) pytanie o otwarcie
+/// ustawień aplikacji domyślnych, bo domyślny program Windows każe wybrać użytkownikowi.
+fn register(quiet: bool) {
+    if let Err(error) = assoc::register() {
+        if !quiet {
+            show_error(&format!("Nie udało się zarejestrować mdread dla plików Markdown.\n\n{error}"));
+        }
+        std::process::exit(1);
+    }
+    if quiet {
+        return;
+    }
+    let answer = unsafe {
+        MessageBoxW(
+            None,
+            w!("mdread jest zarejestrowany dla plików .md i pojawi się w „Otwórz za pomocą”.\n\nOtworzyć Ustawienia → Aplikacje domyślne, żeby ustawić go jako domyślny?"),
+            w!("mdread"),
+            MB_YESNO | MB_ICONINFORMATION,
+        )
+    };
+    if answer == IDYES {
+        unsafe {
+            ShellExecuteW(None, w!("open"), w!("ms-settings:defaultapps?registeredAppUser=mdread"), None, None, SW_SHOWNORMAL);
+        }
+    }
 }
 
 /// Otwiera pliki w kartach (strona przełącza na już otwartą kartę tego samego pliku).

@@ -15,7 +15,7 @@ use windows::Win32::UI::Shell::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, IDC_ARROW,
-    IsIconic, LoadCursorW, MSG, PostMessageW, PostQuitMessage, RegisterClassW, SW_RESTORE,
+    IsIconic, LoadCursorW, LoadIconW, MSG, PostMessageW, PostQuitMessage, RegisterClassW, SW_RESTORE,
     SW_SHOWDEFAULT, SWP_NOACTIVATE, SWP_NOZORDER, SetForegroundWindow, SetWindowPos,
     SetWindowTextW, ShowWindow, TranslateMessage, WINDOW_EX_STYLE, WM_APP, WM_CLOSE, WM_COPYDATA,
     WM_DESTROY, WM_DPICHANGED, WM_MOVE, WM_SETFOCUS, WM_SIZE, WNDCLASSW, WS_OVERLAPPEDWINDOW,
@@ -48,6 +48,8 @@ pub fn create() -> Result<HWND> {
             lpfnWndProc: Some(window_proc),
             hInstance: instance,
             hCursor: LoadCursorW(None, IDC_ARROW)?,
+            // Ikona z zasobów exe (identyfikator 1, patrz build.rs).
+            hIcon: LoadIconW(Some(instance), PCWSTR(1 as _)).unwrap_or_default(),
             hbrBackground: background,
             lpszClassName: CLASS_NAME,
             ..Default::default()
