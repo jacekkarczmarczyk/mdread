@@ -1,6 +1,11 @@
 use std::path::PathBuf;
 
-use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, RECT, WPARAM};
+use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, WPARAM};
+use windows::Win32::Graphics::Dwm::{
+    DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR, DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute,
+};
+use windows::Win32::Graphics::Gdi::CreateSolidBrush;
+use windows::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoTaskMemFree};
 use windows::Win32::System::DataExchange::COPYDATASTRUCT;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -15,7 +20,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     SetWindowTextW, ShowWindow, TranslateMessage, WINDOW_EX_STYLE, WM_APP, WM_CLOSE, WM_COPYDATA,
     WM_DESTROY, WM_DPICHANGED, WM_MOVE, WM_SETFOCUS, WM_SIZE, WNDCLASSW, WS_OVERLAPPEDWINDOW,
 };
-use windows::core::{HSTRING, PCWSTR, Result, w};
+use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
 use crate::{editor, instance, settings, webview};
 
@@ -34,12 +39,16 @@ const PROGRAM_FILTERS: &[COMDLG_FILTERSPEC] =
     &[COMDLG_FILTERSPEC { pszName: w!("Programy"), pszSpec: w!("*.exe") }];
 
 pub fn create() -> Result<HWND> {
+    let appearance = settings::appearance();
     unsafe {
         let instance = HINSTANCE(GetModuleHandleW(None)?.0);
+        // Tło w kolorze ostatniego motywu, żeby przed załadowaniem strony nie błysnęło białe okno.
+        let background = appearance.background.map(|color| CreateSolidBrush(COLORREF(color))).unwrap_or_default();
         let class = WNDCLASSW {
             lpfnWndProc: Some(window_proc),
             hInstance: instance,
             hCursor: LoadCursorW(None, IDC_ARROW)?,
+            hbrBackground: background,
             lpszClassName: CLASS_NAME,
             ..Default::default()
         };
@@ -58,9 +67,43 @@ pub fn create() -> Result<HWND> {
             Some(instance),
             None,
         )?;
+        apply_frame(hwnd, &appearance);
         let _ = ShowWindow(hwnd, SW_SHOWDEFAULT);
         Ok(hwnd)
     }
+}
+
+/// Pasek tytułu w kolorach motywu: tryb ciemny/jasny ramki oraz (Windows 11) kolor tła i tekstu.
+pub fn apply_frame(hwnd: HWND, appearance: &settings::Appearance) {
+    let dark = if appearance.mode == "system" { system_dark() } else { appearance.mode == "dark" };
+    unsafe {
+        let dark = BOOL::from(dark);
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark as *const _ as _, size_of::<BOOL>() as u32);
+        for (attribute, color) in [(DWMWA_CAPTION_COLOR, appearance.caption), (DWMWA_TEXT_COLOR, appearance.text)] {
+            if let Some(color) = color {
+                let color = COLORREF(color);
+                let _ = DwmSetWindowAttribute(hwnd, attribute, &color as *const _ as _, size_of::<COLORREF>() as u32);
+            }
+        }
+    }
+}
+
+/// Czy Windows używa ciemnego motywu aplikacji.
+pub fn system_dark() -> bool {
+    let mut value = 1u32;
+    let mut size = size_of::<u32>() as u32;
+    let result = unsafe {
+        RegGetValueW(
+            HKEY_CURRENT_USER,
+            w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+            w!("AppsUseLightTheme"),
+            RRF_RT_REG_DWORD,
+            None,
+            Some(&mut value as *mut _ as _),
+            Some(&mut size),
+        )
+    };
+    result.is_ok() && value == 0
 }
 
 pub fn run_loop() {

@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="app.css">
 <script src="app.js" defer></script>
 </head>
@@ -9,20 +10,41 @@
 <nav id="tabbar">
   <div id="tabs" role="tablist"></div>
   <button id="new-tab" type="button" title="Otwórz plik (Ctrl+O)">+</button>
-  <div id="tools" hidden>
-    <button id="math-toggle" type="button" aria-pressed="true" hidden>∑ Wzory</button>
-    <button id="edit" type="button">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 1.8a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L5.6 13.1l-3.4.9.9-3.4z"/></svg>
-      Edytuj
-    </button>
-    <button id="edit-menu-button" type="button" title="Wybierz edytor" aria-haspopup="menu">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
-    </button>
-    <div id="edit-menu" role="menu" hidden>
-      <button type="button" role="menuitemradio" data-action="resetEditor">Notatnik</button>
-      <button type="button" role="menuitemradio" data-action="custom" id="custom-editor" hidden></button>
-      <hr>
-      <button type="button" role="menuitem" data-action="chooseEditor">Wybierz program…</button>
+  <div id="tools">
+    <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>∑ Wzory</button>
+    <div class="dropdown">
+      <button id="appearance-button" class="tool" type="button" title="Wygląd" aria-haspopup="menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13c.9 0 1.4-.6 1.4-1.3 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.7.6-1.3 1.3-1.3h1.6c1.7 0 3-1.3 3-3C14.5 4 11.6 1.5 8 1.5zM4.5 8.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2-3a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2 3a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+        Wygląd
+      </button>
+      <div id="appearance-menu" class="menu" role="menu" hidden>
+        <div class="menu-label">Motyw</div>
+        <button type="button" role="menuitemradio" data-theme="github">GitHub</button>
+        <button type="button" role="menuitemradio" data-theme="jetbrains">JetBrains</button>
+        <button type="button" role="menuitemradio" data-theme="vscode">VS Code</button>
+        <button type="button" role="menuitemradio" data-theme="fluent">Fluent (jak Notatnik)</button>
+        <button type="button" role="menuitemradio" data-theme="reading">Czytelnia</button>
+        <hr>
+        <div class="menu-label">Tryb</div>
+        <button type="button" role="menuitemradio" data-mode="system">Jak w systemie</button>
+        <button type="button" role="menuitemradio" data-mode="light">Jasny</button>
+        <button type="button" role="menuitemradio" data-mode="dark">Ciemny</button>
+      </div>
+    </div>
+    <div id="edit-tools" class="dropdown split" hidden>
+      <button id="edit" class="tool" type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 1.8a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L5.6 13.1l-3.4.9.9-3.4z"/></svg>
+        Edytuj
+      </button>
+      <button id="edit-menu-button" class="tool" type="button" title="Wybierz edytor" aria-haspopup="menu">
+        <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div id="edit-menu" class="menu" role="menu" hidden>
+        <button type="button" role="menuitemradio" data-action="resetEditor">Notatnik</button>
+        <button type="button" role="menuitemradio" data-action="custom" id="custom-editor" hidden></button>
+        <hr>
+        <button type="button" role="menuitem" data-action="chooseEditor">Wybierz program…</button>
+      </div>
     </div>
   </div>
 </nav>

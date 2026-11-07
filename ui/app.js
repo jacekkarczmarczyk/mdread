@@ -4,7 +4,7 @@ const host = window.chrome.webview;
 const tabsEl = document.getElementById('tabs');
 const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
-const tools = document.getElementById('tools');
+const editTools = document.getElementById('edit-tools');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
 const editMenu = document.getElementById('edit-menu');
@@ -91,7 +91,7 @@ function activate(entry) {
   }
   active = entry;
   empty.hidden = true;
-  tools.hidden = false;
+  editTools.hidden = false;
   showMathToggle(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
@@ -102,11 +102,11 @@ function activate(entry) {
 
 const loaded = new Map();
 
-function load(src, media = 'all') {
+function load(src) {
   if (!loaded.has(src)) {
     loaded.set(src, new Promise((resolve, reject) => {
       const element = src.endsWith('.css')
-        ? Object.assign(document.createElement('link'), { rel: 'stylesheet', href: src, media })
+        ? Object.assign(document.createElement('link'), { rel: 'stylesheet', href: src })
         : Object.assign(document.createElement('script'), { src });
       element.onload = resolve;
       element.onerror = () => reject(new Error(`Nie udało się wczytać ${src}`));
@@ -131,11 +131,8 @@ async function enhance(entry) {
 }
 
 async function highlightCode(blocks) {
-  await Promise.all([
-    load('vendor/highlight/highlight.min.js'),
-    load('vendor/highlight/light.min.css', '(prefers-color-scheme: light)'),
-    load('vendor/highlight/dark.min.css', '(prefers-color-scheme: dark)'),
-  ]);
+  // Kolory tokenów są w themes.css (zmienne --tok-*), więc bez arkuszy highlight.js.
+  await load('vendor/highlight/highlight.min.js');
   for (const code of blocks) {
     const language = code.parentElement.getAttribute('lang');
     if (!hljs.getLanguage(language)) continue;
@@ -164,16 +161,21 @@ async function renderMath(entry, elements) {
 
 let diagramCount = 0;
 
+function initializeMermaid() {
+  const dark = document.documentElement.dataset.scheme === 'dark';
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+}
+
 async function renderDiagrams(blocks) {
   await load('vendor/mermaid/mermaid.min.js');
-  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+  initializeMermaid();
   for (const pre of blocks) {
     const id = `mermaid-${++diagramCount}`;
     try {
       const { svg } = await mermaid.render(id, pre.textContent);
       const diagram = document.createElement('div');
       diagram.className = 'mermaid-diagram';
+      diagram.dataset.source = pre.textContent;
       diagram.innerHTML = svg;
       pre.replaceWith(diagram);
     } catch (error) {
@@ -181,6 +183,21 @@ async function renderDiagrams(blocks) {
       document.getElementById(`d${id}`)?.remove();
       pre.classList.add('mermaid-error');
       pre.title = `Błąd diagramu: ${error.message ?? error}`;
+    }
+  }
+}
+
+// Diagramy mają kolory wpisane w SVG, więc po zmianie jasny/ciemny rysujemy je od nowa.
+async function rerenderDiagrams() {
+  const diagrams = document.querySelectorAll('.mermaid-diagram');
+  if (!diagrams.length) return;
+  initializeMermaid();
+  for (const diagram of diagrams) {
+    try {
+      const { svg } = await mermaid.render(`mermaid-${++diagramCount}`, diagram.dataset.source);
+      diagram.innerHTML = svg;
+    } catch (error) {
+      console.error(error);
     }
   }
 }
@@ -268,24 +285,83 @@ function showEditor({ name, custom }) {
   customEditor.setAttribute('aria-checked', String(custom));
 }
 
-function toggleEditMenu(open = editMenu.hidden) {
-  editMenu.hidden = !open;
-  editMenuButton.setAttribute('aria-expanded', String(open));
+editButton.addEventListener('click', editActive);
+
+// Rozwijane menu: otwiera przycisk, zamyka wybór pozycji, klik obok, Esc albo utrata fokusu okna.
+
+const menus = [];
+
+function dropdown(button, menu, onSelect) {
+  const toggle = (open = menu.hidden) => {
+    for (const other of menus) if (other !== toggle) other(false);
+    menu.hidden = !open;
+    button.setAttribute('aria-expanded', String(open));
+  };
+  menus.push(toggle);
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggle();
+  });
+  menu.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const item = event.target.closest('button');
+    if (!item) return;
+    onSelect(item);
+    toggle(false);
+  });
 }
 
-editButton.addEventListener('click', editActive);
-editMenuButton.addEventListener('click', (event) => {
-  event.stopPropagation();
-  toggleEditMenu();
-});
-editMenu.addEventListener('click', (event) => {
-  const action = event.target.closest('button')?.dataset.action;
+const closeMenus = () => { for (const toggle of menus) toggle(false); };
+document.addEventListener('click', closeMenus);
+window.addEventListener('blur', closeMenus);
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMenus(); });
+
+dropdown(editMenuButton, editMenu, (item) => {
+  const action = item.dataset.action;
   if (action === 'resetEditor' || action === 'chooseEditor') post({ type: action });
-  toggleEditMenu(false);
 });
-document.addEventListener('click', () => toggleEditMenu(false));
-window.addEventListener('blur', () => toggleEditMenu(false));
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleEditMenu(false); });
+
+// Wygląd: motyw i tryb. Host wstawia startowe data-theme/data-mode/data-scheme do <html>,
+// żeby pierwsza klatka miała już właściwe kolory.
+
+const root = document.documentElement;
+const appearanceMenu = document.getElementById('appearance-menu');
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+const appearance = { theme: root.dataset.theme || 'github', mode: root.dataset.mode || 'system' };
+
+function applyAppearance() {
+  const scheme = appearance.mode === 'system' ? (systemDark.matches ? 'dark' : 'light') : appearance.mode;
+  const schemeChanged = root.dataset.scheme !== scheme;
+  root.dataset.theme = appearance.theme;
+  root.dataset.mode = appearance.mode;
+  root.dataset.scheme = scheme;
+  for (const item of appearanceMenu.querySelectorAll('[data-theme]')) {
+    item.setAttribute('aria-checked', String(item.dataset.theme === appearance.theme));
+  }
+  for (const item of appearanceMenu.querySelectorAll('[data-mode]')) {
+    item.setAttribute('aria-checked', String(item.dataset.mode === appearance.mode));
+  }
+  // Kolory dla paska tytułu okna i tła WebView przed załadowaniem strony.
+  const style = getComputedStyle(root);
+  const color = (name) => style.getPropertyValue(name).trim();
+  post({
+    type: 'appearance',
+    theme: appearance.theme,
+    mode: appearance.mode,
+    caption: color('--tabbar-bg'),
+    text: color('--fg'),
+    background: color('--bg'),
+  });
+  if (schemeChanged) rerenderDiagrams();
+}
+
+dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) => {
+  if (item.dataset.theme) appearance.theme = item.dataset.theme;
+  if (item.dataset.mode) appearance.mode = item.dataset.mode;
+  applyAppearance();
+});
+systemDark.addEventListener('change', () => { if (appearance.mode === 'system') applyAppearance(); });
+applyAppearance();
 
 // Kopiowanie z formatowaniem: sam HTML zaznaczenia, bez stylów wyliczonych z motywu
 // (inaczej np. jasny tekst z ciemnego motywu trafiałby do Worda jako biały).

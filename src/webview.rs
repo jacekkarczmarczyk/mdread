@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
-    COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-    CreateCoreWebView2EnvironmentWithOptions, ICoreWebView2, ICoreWebView2Controller,
+    COREWEBVIEW2_COLOR, COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+    CreateCoreWebView2EnvironmentWithOptions, ICoreWebView2, ICoreWebView2Controller, ICoreWebView2Controller2,
     ICoreWebView2Environment, ICoreWebView2File, ICoreWebView2WebMessageReceivedEventArgs,
     ICoreWebView2WebMessageReceivedEventArgs2, ICoreWebView2WebResourceRequestedEventArgs,
     ICoreWebView2WebResourceResponse,
@@ -15,6 +15,7 @@ use webview2_com::{
     CoTaskMemPWSTR, CreateCoreWebView2ControllerCompletedHandler,
     CreateCoreWebView2EnvironmentCompletedHandler, ExecuteScriptCompletedHandler, NavigationStartingEventHandler,
     NewWindowRequestedEventHandler, WebMessageReceivedEventHandler, WebResourceRequestedEventHandler,
+    ZoomFactorChangedEventHandler,
 };
 use windows::Win32::Foundation::{E_POINTER, HWND, RECT};
 use windows::Win32::System::Com::IStream;
@@ -148,6 +149,22 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
     let hwnd = STATE.with_borrow(|state| state.hwnd);
     unsafe {
         controller.SetBounds(client_rect(hwnd))?;
+        set_background(&controller, settings::appearance().background);
+        if let Some(zoom) = settings::zoom() {
+            controller.SetZoomFactor(zoom)?;
+        }
+        let mut token = 0;
+        controller.add_ZoomFactorChanged(
+            &ZoomFactorChangedEventHandler::create(Box::new(|controller, _| {
+                if let Some(controller) = controller {
+                    let mut zoom = 1.0;
+                    controller.ZoomFactor(&mut zoom)?;
+                    settings::set_zoom(zoom);
+                }
+                Ok(())
+            })),
+            &mut token,
+        )?;
         let webview = controller.CoreWebView2()?;
 
         let settings = webview.Settings()?;
@@ -158,7 +175,6 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             &HSTRING::from(format!("{ORIGIN}*")),
             COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
         )?;
-        let mut token = 0;
         let env_for_resources = env.clone();
         webview.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(move |_, args| match args {
@@ -228,6 +244,14 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             }
         }
         Some("copyText") => clipboard::set_text(message["text"].as_str().unwrap_or_default()),
+        Some("appearance") => {
+            settings::set_appearance(message);
+            let appearance = settings::appearance();
+            window::apply_frame(hwnd, &appearance);
+            if let Some(controller) = controller() {
+                set_background(&controller, appearance.background);
+            }
+        }
         Some("openDialog") => window::request_open_dialog(hwnd),
         Some("edit") => {
             if let Some(path) = message["path"].as_str() {
@@ -300,11 +324,39 @@ fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourc
         }
     } else {
         match assets::asset(uri.strip_prefix(ORIGIN).unwrap_or_default()) {
+            Some((body, mime)) if mime.starts_with("text/html") => {
+                respond(env, Some(with_appearance(body).as_bytes()), 200, "OK", mime)?
+            }
             Some((body, mime)) => respond(env, Some(body), 200, "OK", mime)?,
             None => respond(env, None, 404, "Not Found", "text/plain")?,
         }
     };
     unsafe { args.SetResponse(&response) }
+}
+
+/// Wstawia zapisany motyw do `<html>`, żeby strona od pierwszej klatki miała właściwe kolory.
+fn with_appearance(html: &[u8]) -> String {
+    let appearance = settings::appearance();
+    let dark = if appearance.mode == "system" { window::system_dark() } else { appearance.mode == "dark" };
+    let scheme = if dark { "dark" } else { "light" };
+    String::from_utf8_lossy(html).replacen(
+        "<html lang=\"pl\">",
+        &format!(
+            "<html lang=\"pl\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\">",
+            appearance.theme, appearance.mode
+        ),
+        1,
+    )
+}
+
+/// Kolor tła WebView widoczny, zanim strona się narysuje.
+fn set_background(controller: &ICoreWebView2Controller, color: Option<u32>) {
+    let Some(color) = color else { return };
+    let Ok(controller) = controller.cast::<ICoreWebView2Controller2>() else { return };
+    let [r, g, b, _] = color.to_le_bytes();
+    unsafe {
+        let _ = controller.SetDefaultBackgroundColor(COREWEBVIEW2_COLOR { A: 255, R: r, G: g, B: b });
+    }
 }
 
 /// Obrazek z dysku dla `<img>` w dokumencie. Inne typy plików nie są serwowane.

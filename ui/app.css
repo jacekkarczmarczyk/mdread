@@ -1,27 +1,4 @@
-:root {
-  color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #1f2328;
-  --muted: #59636e;
-  --border: #d1d9e0;
-  --code-bg: #f6f8fa;
-  --link: #0969da;
-  --tabbar-bg: #f0f2f5;
-  --tab-hover: #e3e6ea;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --fg: #f0f6fc;
-    --muted: #9198a1;
-    --border: #3d444d;
-    --code-bg: #151b23;
-    --link: #4493f8;
-    --tabbar-bg: #010409;
-    --tab-hover: #151b23;
-  }
-}
+/* Kolory i kroje pochodzą z themes.css */
 
 html, body {
   height: 100%;
@@ -33,7 +10,9 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  font: 16px/1.5 -apple-system, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-family: var(--font-text);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
 }
 
 [hidden] { display: none !important; }
@@ -47,7 +26,7 @@ body {
   gap: 4px;
   padding: 6px 8px 0;
   background: var(--tabbar-bg);
-  font: 13px/1 "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font: 13px/1 var(--font-ui);
   user-select: none;
 }
 
@@ -111,37 +90,40 @@ body {
   font-size: 20px;
 }
 
-/* Edycja w zewnętrznym programie */
+/* Przyciski po prawej: wzory, wygląd, edycja */
 
 #tools {
-  position: relative;
   display: flex;
   align-self: center;
+  gap: 6px;
   margin: 0 0 4px auto;
   padding-left: 8px;
 }
 
-#tools > button {
+.dropdown { position: relative; display: flex; }
+
+.tool {
   display: flex;
   align-items: center;
   gap: 6px;
   height: 28px;
   padding: 0 10px;
   border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--bg);
   color: var(--fg);
   font: inherit;
+  white-space: nowrap;
 }
 
-#tools > button:hover { background: var(--tab-hover); }
-#edit { border-radius: 6px 0 0 6px; }
-#edit-menu-button { margin-left: -1px; padding: 0 6px !important; border-radius: 0 6px 6px 0; }
+.tool:hover { background: var(--tab-hover); }
+.split > .tool:first-child { border-radius: 6px 0 0 6px; }
+.split > .tool + .tool { margin-left: -1px; padding: 0 6px; border-radius: 0 6px 6px 0; }
 
-#tools svg { width: 14px; height: 14px; }
-#edit svg { fill: currentColor; }
-#edit-menu-button svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.tool svg { width: 14px; height: 14px; fill: currentColor; }
+.tool svg.chevron { fill: none; stroke: currentColor; stroke-width: 1.6; }
 
-#edit-menu {
+.menu {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
@@ -154,7 +136,7 @@ body {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
 }
 
-#edit-menu button {
+.menu button {
   display: block;
   width: 100%;
   padding: 6px 10px 6px 28px;
@@ -166,9 +148,10 @@ body {
   text-align: left;
 }
 
-#edit-menu button:hover { background: var(--tab-hover); }
-#edit-menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 14px; }
-#edit-menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); background: none; }
+.menu button:hover { background: var(--tab-hover); }
+.menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 14px; }
+.menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); background: none; }
+.menu-label { padding: 6px 10px 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 
 /* Podpowiedź z adresem linku */
 
@@ -186,7 +169,7 @@ body {
   border-radius: 6px;
   background: var(--tabbar-bg);
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
-  font: 12px/1.4 "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font: 12px/1.4 var(--font-ui);
   overflow-wrap: anywhere;
   pointer-events: none;
 }
@@ -219,11 +202,11 @@ kbd {
   padding: 2px 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  font: 12px "Cascadia Mono", Consolas, monospace;
+  font: 12px var(--font-code);
 }
 
 .markdown-body {
-  max-width: 980px;
+  max-width: var(--content-width);
   margin: 0 auto;
   padding: 32px 40px 64px;
   box-sizing: border-box;
@@ -231,9 +214,9 @@ kbd {
 
 .markdown-body > :first-child { margin-top: 0; }
 
-h1, h2, h3, h4, h5, h6 { margin: 24px 0 16px; font-weight: 600; line-height: 1.25; }
-h1 { font-size: 2em; padding-bottom: .3em; border-bottom: 1px solid var(--border); }
-h2 { font-size: 1.5em; padding-bottom: .3em; border-bottom: 1px solid var(--border); }
+h1, h2, h3, h4, h5, h6 { margin: 24px 0 16px; font-weight: var(--heading-weight); line-height: 1.25; }
+h1 { font-size: 2em; padding-bottom: .3em; border-bottom: var(--heading-border); }
+h2 { font-size: 1.5em; padding-bottom: .3em; border-bottom: var(--heading-border); }
 h3 { font-size: 1.25em; }
 
 p, ul, ol, table, pre, blockquote { margin: 0 0 16px; }
@@ -241,9 +224,9 @@ p, ul, ol, table, pre, blockquote { margin: 0 0 16px; }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 85%; }
-code { padding: .2em .4em; background: var(--code-bg); border-radius: 6px; }
-pre { padding: 16px; overflow: auto; background: var(--code-bg); border-radius: 6px; line-height: 1.45; }
+code, pre { font-family: var(--font-code); font-size: 85%; }
+code { padding: .2em .4em; background: var(--code-bg); border-radius: var(--code-radius); }
+pre { padding: 16px; overflow: auto; background: var(--code-bg); border-radius: var(--code-radius); line-height: 1.45; }
 pre code { padding: 0; background: none; font-size: 100%; }
 
 blockquote { margin-left: 0; padding: 0 1em; color: var(--muted); border-left: .25em solid var(--border); }
@@ -257,7 +240,7 @@ blockquote { margin-left: 0; padding: 0 1em; color: var(--muted); border-left: .
 .markdown-alert-important { --alert: #8250df; }
 .markdown-alert-warning { --alert: #9a6700; }
 .markdown-alert-caution { --alert: #d1242f; }
-@media (prefers-color-scheme: dark) {
+:root[data-scheme="dark"] {
   .markdown-alert-note { --alert: #4493f8; }
   .markdown-alert-tip { --alert: #3fb950; }
   .markdown-alert-important { --alert: #ab7df8; }
@@ -277,7 +260,6 @@ img { max-width: 100%; }
 
 /* Rozszerzenia */
 
-/* Motywy highlight.js mają własne tło; zostaje tło bloku kodu z motywu aplikacji. */
 .markdown-body pre code.hljs { padding: 0; background: transparent; }
 
 .math-display { overflow-x: auto; overflow-y: hidden; margin: 0 0 16px; }
