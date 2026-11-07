@@ -72,7 +72,7 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   const entry = {
     path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
     // Diagramy domyślnie jako kod; Mermaid (5 MB) ładuje się dopiero po włączeniu przyciskiem.
-    hasDiagrams, diagramsOn: false, diagrams: [], diagramsRendered: false,
+    hasDiagrams, diagramsOn: false, diagrams: [], diagramsRendered: false, outlineOpen: outlineByDefault,
     remoteBar: null, remoteAllowed: false,
     // Pozycja czytania z poprzedniego uruchomienia: odtwarzana, gdy karta jest widoczna, i jeszcze raz
     // po wzorach/diagramach (zmieniają wysokość bloków).
@@ -943,6 +943,14 @@ const outlineResizer = document.getElementById('outline-resizer');
 
 // Poziom dla nowo otwieranych kart: ostatnio wybrany, tylko do zamknięcia programu.
 let outlineDepth = 3;
+// Czy nowo otwierane karty mają od razu otwarty panel (settings.json przez atrybut <html>, domyślnie tak);
+// zmiana w menu zębatki nie rusza już otwartych kart.
+let outlineByDefault = document.documentElement.dataset.outlineDefault !== '0';
+
+function showOutlineDefault() {
+  document.querySelector('[data-outline-default]').setAttribute('aria-checked', String(outlineByDefault));
+}
+showOutlineDefault();
 let outlineItems = [];
 
 function toggleOutline(open = !active?.outlineOpen) {
@@ -1087,6 +1095,12 @@ function applyAppearance() {
 }
 
 dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) => {
+  if ('outlineDefault' in item.dataset) {
+    outlineByDefault = !outlineByDefault;
+    showOutlineDefault();
+    post({ type: 'outlineDefault', open: outlineByDefault });
+    return;
+  }
   if (item.dataset.language) {
     // Zmiana języka uruchamia aplikację od nowa z tymi samymi kartami (aktywna na końcu).
     if (item.dataset.language !== I18N.setting) {

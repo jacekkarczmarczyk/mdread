@@ -265,6 +265,11 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 links::reveal_in_total_commander(Path::new(path));
             }
         }
+        Some("outlineDefault") => {
+            if let Some(open) = message["open"].as_bool() {
+                settings::set_outline_default(open);
+            }
+        }
         Some("outlineWidth") => {
             if let Some(width) = message["width"].as_u64() {
                 settings::set_outline_width(width);
@@ -418,7 +423,10 @@ fn with_appearance(html: &[u8]) -> String {
     let scheme = if dark { "dark" } else { "light" };
     let installer = if STATE.with_borrow(|state| state.installer) { " data-installer" } else { "" };
     // Zapamiętana szerokość spisu treści od pierwszej klatki (zmienna CSS dziedziczona przez panel).
-    let outline = settings::outline_width().map(|width| format!(" style=\"--outline-width: {width}px\"")).unwrap_or_default();
+    let mut outline = settings::outline_width().map(|width| format!(" style=\"--outline-width: {width}px\"")).unwrap_or_default();
+    if !settings::outline_default() {
+        outline.push_str(" data-outline-default=\"0\"");
+    }
     String::from_utf8_lossy(html).replacen(
         "<html lang=\"pl\">",
         &format!(

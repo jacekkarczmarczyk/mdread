@@ -64,6 +64,7 @@
   "outline.close": "Zamknij spis treści",
   "outline.depth": "Pokaż nagłówki: {marks}",
   "outline.empty": "Brak nagłówków",
+  "outline.openByDefault": "Otwieraj przy nowych plikach",
   "outline.resize": "Przeciągnij, aby zmienić szerokość",
   "code.copy": "Kopiuj",
   "code.copied": "Skopiowano",

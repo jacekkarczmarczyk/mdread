@@ -113,6 +113,17 @@ pub fn set_outline_width(width: u64) {
     save(&settings);
 }
 
+/// Czy nowo otwierane pliki mają od razu otwarty spis treści (domyślnie tak).
+pub fn outline_default() -> bool {
+    load().get("outlineDefault").and_then(Value::as_bool).unwrap_or(true)
+}
+
+pub fn set_outline_default(open: bool) {
+    let mut settings = load();
+    settings.insert("outlineDefault".into(), Value::from(open));
+    save(&settings);
+}
+
 /// `#rrggbb` → COLORREF (0x00BBGGRR).
 pub fn parse_color(text: &str) -> Option<u32> {
     let hex = text.strip_prefix('#').filter(|hex| hex.len() == 6)?;
