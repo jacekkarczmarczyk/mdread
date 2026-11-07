@@ -131,6 +131,9 @@ function noticeContent(path, { kind, megabytes, limit }) {
   return box;
 }
 
+// Letters of right-to-left scripts.
+const RTL_LETTER = /\p{Script=Hebrew}|\p{Script=Arabic}|\p{Script=Syriac}|\p{Script=Thaana}|\p{Script=Nko}/u;
+
 function documentContent(path, html, error, allowRemote, notice) {
   if (notice) return noticeContent(path, notice);
   if (error) {
@@ -153,6 +156,15 @@ function documentContent(path, html, error, allowRemote, notice) {
     }
   }
   translateAlertTitles(template.content);
+  // Text direction from the first letter of each block, so Hebrew and Arabic paragraphs are right-aligned (code
+  // blocks stay left-to-right). Lists, quotes and tables get it explicitly: dir="auto" there would ignore their
+  // items, which have their own dir, and leave the bullets and the quote bar on the left.
+  for (const block of template.content.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, th, td, dt, dd, summary')) {
+    block.dir = 'auto';
+  }
+  for (const container of template.content.querySelectorAll('ul, ol, blockquote, table')) {
+    if (RTL_LETTER.test(container.textContent.match(/\p{L}/u)?.[0] ?? '')) container.dir = 'rtl';
+  }
   addCodeHeaders(template.content);
   const doc = document.createElement('article');
   doc.className = 'markdown-body';
