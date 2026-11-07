@@ -615,6 +615,8 @@ function showInstaller({ editors, directory }) {
     post({ type: 'skipInstall' });
   });
   document.getElementById('installer-buttons').replaceChildren(install, skip);
+  // Okno w wysokości panelu (w pikselach ekranu, z uwzględnieniem skalowania i powiększenia).
+  requestAnimationFrame(() => post({ type: 'installerHeight', height: installerForm.offsetHeight * devicePixelRatio }));
 }
 
 function showInstallError({ message }) {

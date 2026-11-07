@@ -254,6 +254,11 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 links::open(url);
             }
         }
+        Some("installerHeight") => {
+            if let Some(height) = message["height"].as_f64() {
+                window::fit_client_height(hwnd, height.ceil() as i32);
+            }
+        }
         Some("skipInstall") => {
             STATE.with_borrow_mut(|state| state.installer = false);
             window::make_normal(hwnd);

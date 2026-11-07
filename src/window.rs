@@ -15,7 +15,8 @@ use windows::Win32::UI::Shell::{
 };
 use windows::Win32::UI::HiDpi::GetDpiForSystem;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GWL_STYLE, GetMessageW,
+    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GWL_STYLE, GetClientRect, GetMessageW,
+    GetWindowRect,
     GetSystemMetrics, IDC_ARROW, IsIconic, LoadCursorW, LoadIconW, MSG, PostMessageW, PostQuitMessage,
     RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOWDEFAULT, SWP_FRAMECHANGED, SWP_NOACTIVATE,
     SWP_NOZORDER, SetForegroundWindow, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow,
@@ -86,6 +87,28 @@ pub fn create(installer: bool) -> Result<HWND> {
         apply_frame(hwnd, &appearance);
         let _ = ShowWindow(hwnd, SW_SHOWDEFAULT);
         Ok(hwnd)
+    }
+}
+
+/// Dopasowuje wysokość okna instalatora do treści (`client_height` w pikselach ekranu) i środkuje je.
+pub fn fit_client_height(hwnd: HWND, client_height: i32) {
+    unsafe {
+        let mut window = RECT::default();
+        let mut client = RECT::default();
+        let _ = GetWindowRect(hwnd, &mut window);
+        let _ = GetClientRect(hwnd, &mut client);
+        let frame = (window.bottom - window.top) - (client.bottom - client.top);
+        let screen_height = GetSystemMetrics(SM_CYSCREEN);
+        let height = (client_height + frame).min(screen_height);
+        let _ = SetWindowPos(
+            hwnd,
+            None,
+            window.left,
+            (screen_height - height) / 2,
+            window.right - window.left,
+            height,
+            SWP_NOZORDER | SWP_NOACTIVATE,
+        );
     }
 }
 
