@@ -1,6 +1,7 @@
 'use strict';
 
 const host = window.chrome.webview;
+const LOCAL_ORIGIN = 'https://mdread.localhost/';
 const tabsEl = document.getElementById('tabs');
 const docs = document.getElementById('docs');
 const empty = document.getElementById('empty');
@@ -33,7 +34,7 @@ function openDocument({ path, title, html, error, anchor }) {
   page.className = 'page';
   page.tabIndex = -1;
   page.hidden = true;
-  const content = documentContent(path, html, error);
+  const content = documentContent(path, html, error, false);
   page.append(content);
   const hasMath = page.querySelector('[data-math-style]') !== null;
 
@@ -51,7 +52,10 @@ function openDocument({ path, title, html, error, anchor }) {
   closeButton.textContent = '×';
   tab.append(label, closeButton);
 
-  const entry = { path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null };
+  const entry = {
+    path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
+    remoteBar: null, remoteAllowed: false,
+  };
   tab.addEventListener('click', (event) => {
     if (event.target === closeButton) close(entry);
     else activate(entry);
@@ -64,6 +68,7 @@ function openDocument({ path, title, html, error, anchor }) {
   docs.append(page);
   tabs.push(entry);
   activate(entry);
+  updateRemoteBar(entry);
   if (anchor) scrollToAnchor(entry, anchor);
   enhance(entry);
 
@@ -74,17 +79,66 @@ function openDocument({ path, title, html, error, anchor }) {
   }
 }
 
-function documentContent(path, html, error) {
+// Obrazki z internetu nie ładują się same (nadawca pliku dowiedziałby się, że go otwarto i skąd).
+// HTML trafia najpierw do <template>, gdzie przeglądarka niczego nie wczytuje; adres zdalnego obrazka
+// przenosimy do data-remote-src, a pasek w karcie pozwala go wczytać.
+const isRemote = (src) => /^https?:/i.test(src) && !src.startsWith(LOCAL_ORIGIN);
+
+function documentContent(path, html, error, allowRemote) {
   if (error) {
     const box = document.createElement('p');
     box.className = 'error';
     box.textContent = `${path}: ${error}`;
     return box;
   }
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  if (!allowRemote) {
+    for (const image of template.content.querySelectorAll('img[src]')) {
+      if (!isRemote(image.getAttribute('src'))) continue;
+      const placeholder = document.createElement('span');
+      placeholder.className = 'remote-image';
+      placeholder.title = image.getAttribute('src');
+      placeholder.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.image}"/></svg>`;
+      placeholder.append(image.alt || 'obrazek z internetu');
+      remoteImages.set(placeholder, image);
+      image.replaceWith(placeholder);
+    }
+  }
   const doc = document.createElement('article');
   doc.className = 'markdown-body';
-  doc.innerHTML = html;
+  doc.append(template.content);
   return doc;
+}
+
+// Znacznik miejsca → oryginalny <img> (wstawiany dopiero po „Pokaż obrazki”).
+const remoteImages = new WeakMap();
+
+function showRemoteImages(entry) {
+  entry.remoteAllowed = true;
+  for (const placeholder of entry.content.querySelectorAll('.remote-image')) {
+    placeholder.replaceWith(remoteImages.get(placeholder));
+  }
+  updateRemoteBar(entry);
+}
+
+function updateRemoteBar(entry) {
+  const count = entry.content.querySelectorAll('.remote-image').length;
+  if (!count) {
+    entry.remoteBar?.remove();
+    entry.remoteBar = null;
+    return;
+  }
+  entry.remoteBar ??= document.createElement('div');
+  const bar = entry.remoteBar;
+  bar.className = 'file-bar file-bar-remote';
+  const text = document.createElement('span');
+  text.textContent = `Obrazki z internetu (${count}) nie zostały wczytane — ich wczytanie pokaże autorom adresów, że otwierasz ten plik.`;
+  const show = iconButton('Pokaż obrazki', 'image', () => showRemoteImages(entry));
+  show.classList.add('primary');
+  bar.replaceChildren(text, show);
+  bar.hidden = entry !== active;
+  fileBars.append(bar);
 }
 
 function findTab(path) {
@@ -100,6 +154,7 @@ const ICONS = {
   ignore: 'M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4zM6.5 8a1.5 1.5 0 0 0 3 0M2.5 2.5l11 11',
   close: 'M4 4l8 8M12 4l-8 8',
   keep: 'M3 8.5l3 3 7-7',
+  image: 'M2.5 3.5h11v9h-11zM2.5 10.5l3-3 3 3 2-2 3 3M10.5 6.5h.01',
 };
 
 function iconButton(label, icon, action) {
@@ -166,9 +221,10 @@ function reloadDocument({ path, html, error }) {
   if (!entry) return;
   const position = readingPosition(entry.page);
   hideFileBar(entry);
-  const content = documentContent(path, html, error);
+  const content = documentContent(path, html, error, entry.remoteAllowed);
   entry.content.replaceWith(content);
   entry.content = content;
+  updateRemoteBar(entry);
   entry.math = [];
   entry.hasMath = content.querySelector('[data-math-style]') !== null;
   if (entry === active) showMathToggle(entry);
@@ -184,6 +240,7 @@ function activate(entry) {
     other.tab.setAttribute('aria-selected', String(isActive));
     other.page.hidden = !isActive;
     if (other.bar) other.bar.hidden = !isActive;
+    if (other.remoteBar) other.remoteBar.hidden = !isActive;
   }
   active = entry;
   empty.hidden = true;
@@ -336,6 +393,7 @@ function close(entry) {
   entry.tab.remove();
   entry.page.remove();
   entry.bar?.remove();
+  entry.remoteBar?.remove();
   post({ type: 'closed', path: entry.path });
   if (tabs.length === 0) {
     post({ type: 'close' });

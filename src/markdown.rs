@@ -7,6 +7,7 @@ use comrak::{Arena, Options, format_html, parse_document};
 pub const LOCAL_PREFIX: &str = "https://mdread.localhost/local/";
 
 /// Renderuje Markdown; względne adresy linków i obrazków rozwiązuje względem `base_dir`.
+/// Surowy HTML z pliku zostaje, ale całość przechodzi przez [`sanitizer`].
 pub fn render(source: &str, base_dir: &Path) -> String {
     let options = options();
     let arena = Arena::new();
@@ -20,7 +21,27 @@ pub fn render(source: &str, base_dir: &Path) -> String {
     }
     let mut html = String::new();
     let _ = format_html(root, &options, &mut html);
-    html
+    sanitizer(base_dir.to_owned()).clean(&html).to_string()
+}
+
+/// Biała lista jak na GitHubie (domyślna ammonia: bez script, style, iframe, form, atrybutów on*,
+/// adresów javascript:/data:) plus to, czego potrzebuje wynik comrak i strona aplikacji.
+fn sanitizer(base_dir: PathBuf) -> ammonia::Builder<'static> {
+    let mut builder = ammonia::Builder::default();
+    builder
+        .add_tags(["details", "summary", "section", "input"])
+        .add_generic_attributes([
+            "id", "class", "align", "data-sourcepos", "data-math-style", "data-footnotes",
+            "data-footnote-ref", "data-footnote-backref", "aria-label", "aria-hidden",
+        ])
+        .add_tag_attributes("input", ["type", "checked", "disabled"])
+        .add_tag_attributes("details", ["open"])
+        // Względne adresy w surowym HTML (np. <img src="img/x.png">) tak samo jak w składni Markdown.
+        .attribute_filter(move |_element, attribute, value| match attribute {
+            "src" | "href" => Some(local_url(value, &base_dir).map_or(value.into(), Into::into)),
+            _ => Some(value.into()),
+        });
+    builder
 }
 
 fn options() -> Options<'static> {
@@ -38,6 +59,8 @@ fn options() -> Options<'static> {
     ext.header_id_prefix = Some(String::new());
     options.render.github_pre_lang = true;
     options.render.sourcepos = true;
+    // Surowy HTML i wszystkie adresy przepuszcza comrak; czyści je dopiero ammonia.
+    options.render.r#unsafe = true;
     options
 }
 
@@ -144,8 +167,39 @@ mod tests {
     }
 
     #[test]
-    fn escapes_raw_html() {
-        assert!(!html("<script>alert(1)</script>").contains("<script>"));
+    fn keeps_safe_raw_html() {
+        let html = html("<details><summary>Więcej</summary>\n\nTreść\n\n</details>\n\nH<sub>2</sub>O <kbd>Ctrl</kbd><br>");
+        for tag in ["<details", "<summary", "<sub>", "<kbd>", "<br"] {
+            assert!(html.contains(tag), "{tag}: {html}");
+        }
+    }
+
+    #[test]
+    fn removes_dangerous_raw_html() {
+        let html = html(
+            "<script>alert(1)</script>\n\n<img src=\"x.png\" onerror=\"alert(1)\">\n\n\
+             <iframe src=\"https://example.com\"></iframe>\n\n<style>body{display:none}</style>\n\n\
+             <a href=\"javascript:alert(1)\">x</a>",
+        );
+        for bad in ["<script", "onerror", "<iframe", "<style", "javascript:"] {
+            assert!(!html.contains(bad), "{bad}: {html}");
+        }
+    }
+
+    #[test]
+    fn rewrites_relative_urls_in_raw_html() {
+        assert!(html("<img src=\"img/x.png\">").contains(r#"src="https://mdread.localhost/local/C%3A/docs/img/x.png""#));
+    }
+
+    #[test]
+    fn keeps_app_markup() {
+        let html = html("# Tytuł\n\n- [x] zrobione\n\n$x$\n\n```mermaid\na\n```\n\n> [!NOTE]\n> uwaga\n\nprzypis[^1]\n\n[^1]: treść");
+        for needed in [
+            "id=\"tytuł\"", "data-sourcepos", "type=\"checkbox\"", "data-math-style", "lang=\"mermaid\"",
+            "markdown-alert-note", "data-footnote-ref",
+        ] {
+            assert!(html.contains(needed), "{needed}: {html}");
+        }
     }
 
     #[test]

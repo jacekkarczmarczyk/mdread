@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ammonia = "4.2.4"
 comrak = { version = "0.59.0", default-features = false }
 serde_json = "1.0.154"
 webview2-com = "0.39.1"
