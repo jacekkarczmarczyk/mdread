@@ -199,13 +199,17 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             &mut token,
         )?;
         // The page never leaves index.html (nor navigates to files under /local/): links are handled by
-        // the script, and new windows are blocked.
+        // the script, and new windows are blocked. It loads once: a reload (F5, Ctrl+R) would empty the window,
+        // because the tabs live only in the page.
+        let loaded = std::cell::Cell::new(false);
         webview.add_NavigationStarting(
-            &NavigationStartingEventHandler::create(Box::new(|_, args| {
+            &NavigationStartingEventHandler::create(Box::new(move |_, args| {
                 if let Some(args) = args {
                     let mut uri = PWSTR::null();
                     args.Uri(&mut uri)?;
-                    if CoTaskMemPWSTR::from(uri).to_string() != format!("{ORIGIN}index.html") {
+                    let first_load =
+                        CoTaskMemPWSTR::from(uri).to_string() == format!("{ORIGIN}index.html") && !loaded.replace(true);
+                    if !first_load {
                         args.SetCancel(true)?;
                     }
                 }
