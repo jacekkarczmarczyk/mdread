@@ -17,7 +17,7 @@ fn source(language: &str) -> &'static str {
 pub fn path() -> PathBuf {
     let language = i18n::current();
     let name = if language == "pl" { "MDRead — pomoc.md" } else { "MDRead — help.md" };
-    let dir = PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join("mdread").join("help");
+    let dir = PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join(crate::PROFILE).join("help");
     let path = dir.join(name);
     let text = source(language);
     if std::fs::read_to_string(&path).ok().as_deref() != Some(text) {

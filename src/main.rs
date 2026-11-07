@@ -36,6 +36,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, w};
 
+/// Folder of the settings (%APPDATA%) and of the WebView2 data (%LOCALAPPDATA%). A debug build has its own, so it
+/// runs next to the installed copy without touching its settings (also its own single-instance mutex and window class).
+pub const PROFILE: &str = if cfg!(debug_assertions) { "mdread-debug" } else { "mdread" };
+
 fn main() {
     timing::mark("main");
     i18n::init();
@@ -267,6 +271,10 @@ fn document_message(kind: &str, path: &Path) -> Value {
             let html = markdown::render(&source, path.parent().unwrap_or(path));
             timing::mark("markdown rendered");
             json!({ "type": kind, "path": path, "title": title, "html": html })
+        }
+        // E.g. a closed tab reopened (Ctrl+Shift+T) after its file was deleted.
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            json!({ "type": kind, "path": path, "title": title, "error": t("file.missing") })
         }
         Err(error) => json!({ "type": kind, "path": path, "title": title, "error": error.to_string() }),
     }

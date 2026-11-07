@@ -49,7 +49,7 @@ thread_local! {
 
 /// WebView2 user data folder (shared by all MDRead windows; the update waits for its browser to exit).
 pub fn data_dir() -> PathBuf {
-    PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join("mdread")
+    PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join(crate::PROFILE)
 }
 
 /// Starts creating the WebView2 environment for the `hwnd` window; further steps go through callbacks.

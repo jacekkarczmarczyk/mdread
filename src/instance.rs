@@ -20,7 +20,8 @@ pub const COPYDATA_OPEN: usize = 0x4D44_4F50;
 pub fn claim(paths: &[PathBuf]) -> bool {
     unsafe {
         // The mutex handle stays open until the process ends.
-        let created = CreateMutexW(None, false, w!("Local\\mdread.single-instance"));
+        let name = if cfg!(debug_assertions) { w!("Local\\mdread-debug.single-instance") } else { w!("Local\\mdread.single-instance") };
+        let created = CreateMutexW(None, false, name);
         if created.is_err() || GetLastError() != ERROR_ALREADY_EXISTS {
             return true;
         }

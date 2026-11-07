@@ -30,7 +30,8 @@ use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 use crate::i18n::t;
 use crate::{editor, instance, settings, update, watcher, webview};
 
-pub const CLASS_NAME: PCWSTR = w!("mdread.window");
+/// A debug build has its own (see [`crate::PROFILE`]), so files are not handed over to the installed copy.
+pub const CLASS_NAME: PCWSTR = if cfg!(debug_assertions) { w!("mdread-debug.window") } else { w!("mdread.window") };
 
 /// Dialogs are shown from the message loop, not from a WebView2 callback.
 const WM_APP_OPEN_DIALOG: u32 = WM_APP + 1;

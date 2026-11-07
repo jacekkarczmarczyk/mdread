@@ -48,6 +48,7 @@
 
   "file.changed": "Plik został zmieniony na dysku.",
   "file.deleted": "Plik został usunięty z dysku.",
+  "file.missing": "pliku nie ma na dysku, został usunięty albo przeniesiony.",
   "file.reload": "Odśwież",
   "file.ignore": "Ignoruj",
   "file.closeTab": "Zamknij kartę",

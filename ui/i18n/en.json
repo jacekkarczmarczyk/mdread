@@ -48,6 +48,7 @@
 
   "file.changed": "The file has changed on disk.",
   "file.deleted": "The file has been deleted from disk.",
+  "file.missing": "the file is not on disk, it has been deleted or moved.",
   "file.reload": "Reload",
   "file.ignore": "Ignore",
   "file.closeTab": "Close tab",

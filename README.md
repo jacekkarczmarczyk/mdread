@@ -131,7 +131,9 @@ cargo build --release
 ```
 
 The result is a single file, `target\release\mdread.exe`; the interface and the JavaScript libraries are embedded.
-A debug build never shows the installer, so it opens an empty window when started without files.
+A debug build never shows the installer, so it opens an empty window when started without files. It keeps its
+settings and WebView2 data in `mdread-debug` folders (next to `mdread`), so it runs alongside the installed copy
+without touching its settings.
 
 ## Files and settings
 

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use serde_json::{Map, Value};
 
 fn file() -> PathBuf {
-    PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join("mdread").join("settings.json")
+    PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join(crate::PROFILE).join("settings.json")
 }
 
 fn load() -> Map<String, Value> {

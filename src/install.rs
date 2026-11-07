@@ -111,7 +111,7 @@ pub fn uninstall() {
     unsafe {
         let _ = RegDeleteTreeW(HKEY_CURRENT_USER, &HSTRING::from(UNINSTALL_KEY));
     }
-    let webview_data = PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join("mdread");
+    let webview_data = crate::webview::data_dir();
     let dir = install_dir();
     // A running exe cannot delete itself: cmd does it shortly after this process exits.
     // Remove only exactly these directories, and only when our exe is in the program directory.
