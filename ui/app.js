@@ -709,7 +709,7 @@ window.addEventListener('keydown', (event) => {
   const key = event.key.toLowerCase();
   let handled = true;
   if (key === 'c' && event.shiftKey) copySelectionAsText();
-  else if (key === 'o' && event.shiftKey) setOutlineOpen(!outlineOpen);
+  else if (key === 'o' && event.shiftKey) toggleOutline();
   else if (key === 'o') post({ type: 'openDialog' });
   else if (key === 'e') editActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
@@ -924,8 +924,8 @@ tabMenu.addEventListener('click', (event) => {
   activate(entry);
 });
 
-// Spis treści: nagłówki aktywnej karty w panelu z lewej. Otwarcie i szerokość są wspólne dla wszystkich
-// plików i zapamiętane w localStorage (dane WebView2 w profilu użytkownika); poziom osobno dla każdej karty.
+// Spis treści: nagłówki aktywnej karty w panelu z lewej. Otwarcie panelu i poziom są osobne dla każdej
+// karty i tylko w pamięci; szerokość wspólna, zapamiętana w localStorage (dane WebView2 w profilu użytkownika).
 
 const outline = document.getElementById('outline');
 const outlineList = document.getElementById('outline-list');
@@ -940,21 +940,20 @@ function store(key, value) {
   try { localStorage.setItem(key, String(value)); } catch { /* bez zapamiętania */ }
 }
 
-let outlineOpen = stored('outline.open', '0') === '1';
 let outlineDepth = Number(stored('outline.depth', '3'));
 let outlineItems = [];
 outline.style.setProperty('--outline-width', `${Number(stored('outline.width', '260'))}px`);
 
-function setOutlineOpen(open) {
-  outlineOpen = open;
-  store('outline.open', open ? '1' : '0');
+function toggleOutline(open = !active?.outlineOpen) {
+  if (!active) return;
+  active.outlineOpen = open;
   updateOutline();
 }
 
 function updateOutline() {
-  const visible = outlineOpen && active !== null;
+  const visible = Boolean(active?.outlineOpen);
   outline.hidden = !visible;
-  outlineToggle.setAttribute('aria-pressed', String(outlineOpen));
+  outlineToggle.setAttribute('aria-pressed', String(visible));
   if (!visible) return;
   const headings = [...active.content.querySelectorAll('h1, h2, h3, h4, h5, h6')];
   const level = (heading) => Number(heading.tagName[1]);
@@ -1004,8 +1003,8 @@ docs.addEventListener('scroll', () => {
   outlineFrame = requestAnimationFrame(markCurrentHeading);
 }, true);
 
-outlineToggle.addEventListener('click', () => setOutlineOpen(!outlineOpen));
-document.getElementById('outline-close').addEventListener('click', () => setOutlineOpen(false));
+outlineToggle.addEventListener('click', () => toggleOutline());
+document.getElementById('outline-close').addEventListener('click', () => toggleOutline(false));
 
 outlineLevels.addEventListener('click', (event) => {
   const button = event.target.closest('button');
