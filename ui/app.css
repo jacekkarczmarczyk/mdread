@@ -56,6 +56,7 @@ body {
 
 .tab:hover { background: var(--tab-hover); }
 .tab.active { background: var(--bg); color: var(--fg); }
+.tab.dragging { opacity: .7; }
 
 .tab-title {
   flex: 1;

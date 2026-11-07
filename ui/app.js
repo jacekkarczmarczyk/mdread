@@ -80,6 +80,7 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   // Środkowy przycisk: bez autoprzewijania na mousedown, zamknięcie na auxclick.
   tab.addEventListener('mousedown', (event) => { if (event.button === 1) event.preventDefault(); });
   tab.addEventListener('auxclick', (event) => { if (event.button === 1) close(entry); });
+  tab.addEventListener('pointerdown', (event) => { if (event.button === 0 && event.target !== closeButton) dragTab(entry, event); });
 
   tabsEl.append(tab);
   docs.append(page);
@@ -528,7 +529,46 @@ function cycle(step) {
   activate(tabs[(index + step + tabs.length) % tabs.length]);
 }
 
+// Przeciąganie karty zmienia kolejność: karta przeskakuje, gdy kursor minie środek sąsiedniej.
+function dragTab(entry, down) {
+  let dragging = false;
+  const move = (event) => {
+    if (!dragging && Math.abs(event.clientX - down.clientX) < 5) return;
+    if (!dragging) {
+      dragging = true;
+      entry.tab.classList.add('dragging');
+    }
+    const target = tabs.find((other) => {
+      const box = other.tab.getBoundingClientRect();
+      return other !== entry && event.clientX >= box.left && event.clientX < box.right;
+    });
+    if (!target) return;
+    const box = target.tab.getBoundingClientRect();
+    const after = tabs.indexOf(target) > tabs.indexOf(entry);
+    if (after ? event.clientX < box.left + box.width / 2 : event.clientX > box.left + box.width / 2) return;
+    tabs.splice(tabs.indexOf(entry), 1);
+    tabs.splice(tabs.indexOf(target) + (after ? 1 : 0), 0, entry);
+    tabsEl.insertBefore(entry.tab, after ? target.tab.nextSibling : target.tab);
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    if (!dragging) return;
+    entry.tab.classList.remove('dragging');
+    saveSession();
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
+document.getElementById('help').addEventListener('click', () => post({ type: 'help' }));
+
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'F1' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+    event.preventDefault();
+    post({ type: 'help' });
+    return;
+  }
   if (!event.ctrlKey || event.altKey) return;
   const key = event.key.toLowerCase();
   let handled = true;

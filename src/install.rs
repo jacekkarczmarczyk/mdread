@@ -73,7 +73,7 @@ pub fn install(choices: &Value) -> std::result::Result<(), String> {
 /// Uruchamia zainstalowaną kopię (po instalacji) i, jeśli trzeba, ustawienia aplikacji domyślnych.
 pub fn launch_installed(open_default_apps: bool) {
     let mut command = Command::new(installed_exe());
-    command.arg("--after").arg(std::process::id().to_string());
+    command.arg("--after").arg(std::process::id().to_string()).arg("--welcome");
     let _ = command.spawn();
     if open_default_apps {
         crate::open_default_apps();

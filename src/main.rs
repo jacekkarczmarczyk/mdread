@@ -5,6 +5,7 @@ mod assoc;
 mod clipboard;
 mod editor;
 mod exeinfo;
+mod help;
 mod i18n;
 mod install;
 mod instance;
@@ -53,6 +54,9 @@ fn main() {
     let installer = flag(&args, "--install")
         || (args.is_empty() && !install::is_installed() && !cfg!(debug_assertions));
     args.retain(|arg| arg != "--install");
+    // `--welcome`: pierwsze uruchomienie po instalacji otwiera pomoc.
+    let welcome = flag(&args, "--welcome");
+    args.retain(|arg| arg != "--welcome");
     // `--after <pid>`: ponowne uruchomienie (np. po zmianie języka) czeka, aż poprzednie okno się zamknie,
     // inaczej oddałoby mu pliki jako druga instancja.
     if let Some(index) = args.iter().position(|arg| arg == "--after") {
@@ -101,6 +105,9 @@ fn main() {
         restore_session();
     }
     open_paths(&paths);
+    if welcome {
+        help::open();
+    }
     // Od teraz strona zapisuje sesję (wcześniej każda odtwarzana karta oznaczałaby osobny zapis na dysk).
     webview::send(json!({ "type": "startupDone" }));
     window::run_loop();
