@@ -63,6 +63,8 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 
 - The installed MDRead checks GitHub for a newer release at most once a day (gear menu →
   **Check automatically**, on by default). The request carries only the version in its `User-Agent`.
+  Turning the switch on checks right away and shows the result in the bar, also when you already have the
+  latest version.
 - A newer version shows a bar at the bottom of the window. **Install and restart** downloads `mdread.exe`
   from the release, checks its SHA-256 against the digest GitHub publishes for the file, replaces the
   installed copy once the running one has closed and starts it again with the same tabs.

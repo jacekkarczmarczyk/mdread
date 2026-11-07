@@ -107,7 +107,7 @@ the automatic update check and this help.
 The installed MDRead checks GitHub once a day for a newer version. If there is one, a bar at the bottom
 of the window offers **Install and restart**: the program downloads the new version, checks its checksum
 and starts again with the same tabs. Nothing is downloaded without that click. You can turn the check
-off in the gear menu.
+off in the gear menu. When you turn it back on, the bar shows right away whether you have the latest version.
 
 ### Editor
 

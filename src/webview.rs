@@ -279,7 +279,7 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             if let Some(enabled) = message["enabled"].as_bool() {
                 settings::set_update_check(enabled);
                 if enabled {
-                    update::start(hwnd);
+                    update::start(hwnd, true);
                 }
             }
         }

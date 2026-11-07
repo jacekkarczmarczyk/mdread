@@ -324,10 +324,13 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         update::WM_APP_UPDATE => {
             for outcome in update::take() {
                 match outcome {
-                    update::Outcome::Checked(latest) => {
-                        if let Some(message) = update::checked(latest) {
+                    update::Outcome::Checked(latest, manual) => {
+                        if let Some(message) = update::checked(latest, manual) {
                             webview::send(message);
                         }
+                    }
+                    update::Outcome::CheckFailed(error) => {
+                        webview::send(serde_json::json!({ "type": "updateCheckFailed", "message": error }));
                     }
                     // The downloaded version takes over: it waits for this process to exit, then replaces it.
                     update::Outcome::Downloaded(path) => match update::launch(&path) {

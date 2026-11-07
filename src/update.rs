@@ -40,7 +40,10 @@ const CHECKSUM_MISMATCH: &str = "checksum";
 
 /// Results of the background threads, handled on the window thread (settings are written only there).
 pub enum Outcome {
-    Checked(Value),
+    /// The latest release; `true` when the switch started the check (the page then always shows the result).
+    Checked(Value, bool),
+    /// A check started by the switch failed (an automatic one fails silently).
+    CheckFailed(String),
     Downloaded(PathBuf),
     DownloadFailed(String),
 }
@@ -87,9 +90,14 @@ fn now() -> u64 {
 }
 
 /// Starts the check in the background: from the saved result if it is less than a day old, otherwise from GitHub.
-pub fn start(hwnd: HWND) {
+/// `manual` (the switch was just turned on): the page shows the result even when there is nothing new.
+pub fn start(hwnd: HWND, manual: bool) {
     if !settings::update_check() || !may_update() {
         return;
+    }
+    // Set before the check below, so a check already running reports to the page too.
+    if manual {
+        MANUAL.store(true, Ordering::Release);
     }
     // One check at a time, so toggling the switch quickly cannot start a burst of requests.
     if CHECKING.swap(true, Ordering::AcqRel) {
@@ -99,19 +107,25 @@ pub fn start(hwnd: HWND) {
     let cached = settings::update_latest()
         .filter(|latest| now().saturating_sub(latest["checkedAt"].as_u64().unwrap_or(0)) < CHECK_INTERVAL.as_secs());
     std::thread::spawn(move || {
-        let latest = cached.or_else(|| fetch_latest().ok());
+        let latest = cached.map_or_else(fetch_latest, Ok);
         CHECKING.store(false, Ordering::Release);
-        if let Some(latest) = latest {
-            report(hwnd, Outcome::Checked(latest));
+        let manual = MANUAL.swap(false, Ordering::AcqRel);
+        match latest {
+            Ok(latest) => report(hwnd, Outcome::Checked(latest, manual)),
+            Err(error) if manual => report(hwnd, Outcome::CheckFailed(error)),
+            Err(_) => {}
         }
     });
 }
 
 static CHECKING: AtomicBool = AtomicBool::new(false);
+static MANUAL: AtomicBool = AtomicBool::new(false);
 
 /// The latest release: version, page, download address and SHA-256 of mdread.exe (addresses checked).
 fn fetch_latest() -> Result<Value, String> {
-    let body = get(API, "application/vnd.github+json", MAX_API_RESPONSE)?;
+    // A debug build can test a failed check (`MDREAD_PRETEND_OFFLINE`): `.invalid` never resolves.
+    let offline = cfg!(debug_assertions) && std::env::var_os("MDREAD_PRETEND_OFFLINE").is_some();
+    let body = get(if offline { "https://mdread.invalid/" } else { API }, "application/vnd.github+json", MAX_API_RESPONSE)?;
     let release: Value = serde_json::from_slice(&body).map_err(|error| error.to_string())?;
     let version = release["tag_name"].as_str().filter(|tag| parse_version(tag).is_some()).ok_or("tag_name")?;
     let page = release["html_url"].as_str().filter(|url| url.starts_with(PAGES)).ok_or("html_url")?;
@@ -134,15 +148,18 @@ fn fetch_latest() -> Result<Value, String> {
     }))
 }
 
-/// On the window thread: saves the check result and shows the bar when the release is newer and not hidden.
-pub fn checked(latest: Value) -> Option<Value> {
+/// On the window thread: saves the check result and shows the bar when the release is newer and not hidden
+/// (a check started by the switch shows a hidden one again, and says so when this is the latest version).
+pub fn checked(latest: Value, manual: bool) -> Option<Value> {
     settings::set_update_latest(latest.clone());
     let version = latest["version"].as_str()?;
     let current = current_version();
-    let dismissed = settings::update_dismissed().is_some_and(|hidden| hidden == version);
-    (is_newer(version, &current) && !dismissed).then(|| {
-        json!({ "type": "updateAvailable", "version": version, "current": current, "page": latest["page"] })
-    })
+    let dismissed = !manual && settings::update_dismissed().is_some_and(|hidden| hidden == version);
+    if is_newer(version, &current) && !dismissed {
+        Some(json!({ "type": "updateAvailable", "version": version, "current": current, "page": latest["page"] }))
+    } else {
+        manual.then(|| json!({ "type": "updateCurrent", "version": current }))
+    }
 }
 
 /// "Install" on the bar: downloads and verifies the release in the background.
@@ -239,7 +256,18 @@ impl Drop for Handle {
 }
 
 fn open(handle: *mut core::ffi::c_void) -> Result<Handle, String> {
-    if handle.is_null() { Err(windows::core::Error::from_thread().to_string()) } else { Ok(Handle(handle)) }
+    if handle.is_null() { Err(describe(windows::core::Error::from_thread())) } else { Ok(Handle(handle)) }
+}
+
+/// WinHTTP error texts live in winhttp.dll, so the system message is only the code: name the common case instead.
+fn describe(error: windows::core::Error) -> String {
+    let hresult = error.code().0 as u32;
+    let code = hresult & 0xFFFF;
+    if hresult >> 16 == 0x8007 && (12000..12200).contains(&code) {
+        tf("update.noConnection", &[("code", &code.to_string())])
+    } else {
+        error.to_string()
+    }
 }
 
 /// HTTPS GET with redirects (WinHTTP never follows HTTPS to HTTP), a status check, timeouts and a size limit.
@@ -247,7 +275,7 @@ fn get(url: &str, accept: &str, max: usize) -> Result<Vec<u8>, String> {
     let rest = url.strip_prefix("https://").ok_or("https")?;
     let (host, path) = rest.split_once('/').map_or((rest, "/".to_owned()), |(host, path)| (host, format!("/{path}")));
     let agent = HSTRING::from(format!("MDRead/{}", env!("CARGO_PKG_VERSION")));
-    let error = |error: windows::core::Error| error.to_string();
+    let error = describe;
     unsafe {
         let session = open(WinHttpOpen(&agent, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, PCWSTR::null(), PCWSTR::null(), 0))?;
         WinHttpSetTimeouts(session.0, 10_000, 10_000, 30_000, 60_000).map_err(error)?;

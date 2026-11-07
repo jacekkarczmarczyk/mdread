@@ -462,7 +462,12 @@ img { max-width: 100%; }
 #update-text a { color: var(--link); cursor: pointer; }
 #update-text.update-error { color: #d1242f; }
 :root[data-scheme="dark"] #update-text.update-error { color: #f85149; }
-#update-buttons { display: flex; flex: none; gap: 8px; }
+/* "Checking" with dots going . .. ... (a still ellipsis when animations are off) */
+.update-dots::after { content: '...'; animation: update-dots 1.2s steps(1) infinite; }
+@keyframes update-dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+@media (prefers-reduced-motion: reduce) { .update-dots::after { content: '…'; animation: none; } }
+/* The height of a button even when there is none ("Checking…"), so the bar does not jump */
+#update-buttons { display: flex; flex: none; gap: 8px; min-height: 28px; }
 :root[data-installer] #update-bar { display: none; }
 
 /* Installer: small window with just the panel (the host sets data-installer on <html> from the first frame) */

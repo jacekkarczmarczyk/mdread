@@ -119,7 +119,7 @@ fn main() {
     // From now on the page saves the session (before this, every restored tab would mean a separate disk write).
     webview::send(json!({ "type": "startupDone" }));
     if !installer {
-        update::start(hwnd);
+        update::start(hwnd, false);
     }
     window::run_loop();
 }

@@ -1006,7 +1006,8 @@ const updateButtons = document.getElementById('update-buttons');
 document.getElementById('update-section').textContent = t('update.section', { version: document.documentElement.dataset.version });
 
 function showUpdateCheck() {
-  document.querySelector('[data-update-check]').setAttribute('aria-checked', String(updateCheck));
+  // In the menu: <html> carries data-update-check too (when the check is off).
+  document.querySelector('#appearance-menu [data-update-check]').setAttribute('aria-checked', String(updateCheck));
 }
 showUpdateCheck();
 
@@ -1030,6 +1031,23 @@ function showUpdate(update) {
     post({ type: 'updateDismiss', version });
   });
   updateButtons.replaceChildren(install, hide);
+  updateBar.hidden = false;
+}
+
+// A result waits until "Checking…" has been visible for 3 s, so a saved (instant) result does not just flash it;
+// dropped if the switch was turned off meanwhile.
+let checkingUntil = 0;
+function afterChecking(show) {
+  setTimeout(() => { if (updateCheck) show(); }, Math.max(0, checkingUntil - Date.now()));
+}
+
+// After the switch is turned on: "Checking…", then "You're using the latest version" or why the check failed.
+function showUpdateStatus(text, { error = false, closable = true } = {}) {
+  updateText.textContent = text;
+  updateText.title = text;
+  updateText.classList.toggle('update-error', error);
+  const close = iconButton(t('update.close'), 'close', () => { updateBar.hidden = true; });
+  updateButtons.replaceChildren(...(closable ? [close] : []));
   updateBar.hidden = false;
 }
 
@@ -1219,7 +1237,12 @@ dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) =>
   if ('updateCheck' in item.dataset) {
     updateCheck = !updateCheck;
     showUpdateCheck();
-    if (!updateCheck) updateBar.hidden = true;
+    if (updateCheck) {
+      checkingUntil = Date.now() + 3000;
+      showUpdateStatus(t('update.checking'), { closable: false });
+      updateText.append(Object.assign(document.createElement('span'), { className: 'update-dots' }));
+    }
+    else updateBar.hidden = true;
     post({ type: 'updateCheck', enabled: updateCheck });
     return;
   }
@@ -1362,8 +1385,15 @@ host.addEventListener('message', (event) => {
   else if (message.type === 'editors') showEditors(message);
   else if (message.type === 'installer') showInstaller(message);
   else if (message.type === 'installError') showInstallError(message);
-  else if (message.type === 'updateAvailable') showUpdate(message);
+  else if (message.type === 'updateAvailable') afterChecking(() => showUpdate(message));
   else if (message.type === 'updateError') showUpdateError(message);
+  // Results of a check started by the switch.
+  else if (message.type === 'updateCurrent') {
+    afterChecking(() => showUpdateStatus(t('update.upToDate', { version: message.version })));
+  }
+  else if (message.type === 'updateCheckFailed') {
+    afterChecking(() => showUpdateStatus(t('update.checkFailed', { message: message.message }), { error: true }));
+  }
   else if (message.type === 'totalCommander') {
     tabMenu.querySelector('[data-action="revealInTotalCommander"]').hidden = !message.available;
   }
