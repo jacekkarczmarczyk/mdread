@@ -21,7 +21,8 @@
   "edit.button": "Edytuj",
   "edit.title": "Edytuj w: {name} (Ctrl+E)",
   "edit.choose": "Wybierz edytor",
-  "edit.chooseProgram": "Wybierz program…",
+  "edit.chooseProgram": "Dodaj program…",
+  "edit.remove": "Usuń z listy",
   "editor.notepad": "Notatnik",
 
   "remote.clickToLoad": "Kliknij, aby wczytać",

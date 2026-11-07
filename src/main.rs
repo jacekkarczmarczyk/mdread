@@ -4,6 +4,7 @@ mod assets;
 mod assoc;
 mod clipboard;
 mod editor;
+mod exeinfo;
 mod i18n;
 mod instance;
 mod links;

@@ -24,7 +24,7 @@ const editTools = document.getElementById('edit-tools');
 const editButton = document.getElementById('edit');
 const editMenuButton = document.getElementById('edit-menu-button');
 const editMenu = document.getElementById('edit-menu');
-const customEditor = document.getElementById('custom-editor');
+const editorList = document.getElementById('editor-list');
 
 /** @type {{ path: string, key: string, title: string, tab: HTMLElement, page: HTMLElement }[]} */
 const tabs = [];
@@ -487,12 +487,27 @@ function editActive() {
   if (active) post({ type: 'edit', path: active.path });
 }
 
-function showEditor({ name, custom }) {
-  editButton.title = t('edit.title', { name });
-  customEditor.hidden = !custom;
-  customEditor.textContent = custom ? name : '';
-  editMenu.querySelector('[data-action="resetEditor"]').setAttribute('aria-checked', String(!custom));
-  customEditor.setAttribute('aria-checked', String(custom));
+// Lista edytorów od hosta: Notatnik i zapisane programy, każdy z ikoną z własnego pliku exe.
+function showEditors({ items, selectedName }) {
+  editButton.title = t('edit.title', { name: selectedName });
+  editorList.replaceChildren(...items.map((item) => {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
+    const choose = Object.assign(document.createElement('button'), { type: 'button' });
+    choose.setAttribute('role', 'menuitemradio');
+    choose.setAttribute('aria-checked', String(item.selected));
+    Object.assign(choose.dataset, { action: 'selectEditor', path: item.path });
+    if (item.icon) choose.append(Object.assign(document.createElement('img'), { src: item.icon, alt: '', className: 'menu-icon' }));
+    choose.append(item.name);
+    row.append(choose);
+    if (item.removable) {
+      const remove = Object.assign(document.createElement('button'), { type: 'button', title: t('edit.remove'), className: 'menu-remove' });
+      remove.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.close}"/></svg>`;
+      Object.assign(remove.dataset, { action: 'removeEditor', path: item.path });
+      row.append(remove);
+    }
+    return row;
+  }));
 }
 
 editButton.addEventListener('click', editActive);
@@ -532,8 +547,9 @@ window.addEventListener('blur', closeMenus);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMenus(); });
 
 dropdown(editMenuButton, editMenu, (item) => {
-  const action = item.dataset.action;
-  if (action === 'resetEditor' || action === 'chooseEditor') post({ type: action });
+  const { action, path } = item.dataset;
+  if (action === 'chooseEditor') post({ type: action });
+  else if (action === 'selectEditor' || action === 'removeEditor') post({ type: action, path });
 });
 
 // Wygląd: motyw i tryb. Host wstawia startowe data-theme/data-mode/data-scheme do <html>,
@@ -699,7 +715,7 @@ host.addEventListener('message', (event) => {
     const entry = findTab(message.path);
     if (entry) showFileBar(entry, message.type === 'fileChanged' ? 'changed' : 'deleted');
   }
-  else if (message.type === 'editor') showEditor(message);
+  else if (message.type === 'editors') showEditors(message);
 });
 
 post({ type: 'ready' });

@@ -286,9 +286,15 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             }
         }
         Some("chooseEditor") => window::request_choose_editor(hwnd),
-        Some("resetEditor") => {
-            settings::set_editor(None);
-            send(editor::info());
+        Some("selectEditor") | Some("removeEditor") => {
+            if let Some(program) = message["path"].as_str() {
+                if message["type"] == "selectEditor" {
+                    editor::select(Path::new(program));
+                } else {
+                    editor::remove(Path::new(program));
+                }
+                send(editor::info());
+            }
         }
         Some("drop") => crate::open_paths(&dropped_paths(args)),
         Some("close") => window::request_close(hwnd),

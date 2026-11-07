@@ -9,9 +9,10 @@ fn file() -> PathBuf {
 }
 
 fn load() -> Map<String, Value> {
+    // BOM dodaje np. Notatnik albo PowerShell 5.1 przy ręcznej edycji pliku.
     std::fs::read(file())
         .ok()
-        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+        .and_then(|bytes| serde_json::from_slice(bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes)).ok())
         .unwrap_or_default()
 }
 
@@ -101,6 +102,19 @@ pub fn set_editor(editor: Option<PathBuf>) {
         Some(path) => settings.insert("editor".into(), Value::String(path.to_string_lossy().into_owned())),
         None => settings.remove("editor"),
     };
+    save(&settings);
+}
+
+/// Lista edytorów poza Notatnikiem; `None`, dopóki nie została utworzona (pierwszy start).
+pub fn editors() -> Option<Vec<PathBuf>> {
+    let list = load().get("editors")?.as_array()?.iter().filter_map(Value::as_str).map(PathBuf::from).collect();
+    Some(list)
+}
+
+pub fn set_editors(editors: &[PathBuf]) {
+    let mut settings = load();
+    let list = editors.iter().map(|path| Value::String(path.to_string_lossy().into_owned())).collect();
+    settings.insert("editors".into(), Value::Array(list));
     save(&settings);
 }
 

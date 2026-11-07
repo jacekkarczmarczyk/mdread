@@ -226,7 +226,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         }
         WM_APP_CHOOSE_EDITOR => {
             if let Some(program) = show_open_dialog(hwnd, PROGRAM_FILTERS, false).ok().and_then(|paths| paths.into_iter().next()) {
-                settings::set_editor(Some(program));
+                editor::add(&program);
                 webview::send(editor::info());
             }
             LRESULT(0)

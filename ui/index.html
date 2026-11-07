@@ -50,10 +50,12 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
       </button>
       <div id="edit-menu" class="menu" role="menu" hidden>
-        <button type="button" role="menuitemradio" data-action="resetEditor" data-i18n="editor.notepad"></button>
-        <button type="button" role="menuitemradio" data-action="custom" id="custom-editor" hidden></button>
+        <div id="editor-list"></div>
         <hr>
-        <button type="button" role="menuitem" data-action="chooseEditor" data-i18n="edit.chooseProgram"></button>
+        <button type="button" role="menuitem" data-action="chooseEditor">
+          <svg class="menu-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+          <span data-i18n="edit.chooseProgram"></span>
+        </button>
       </div>
     </div>
   </div>
