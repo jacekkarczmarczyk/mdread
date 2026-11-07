@@ -98,10 +98,9 @@ function documentContent(path, html, error, allowRemote) {
       if (!isRemote(image.getAttribute('src'))) continue;
       const placeholder = document.createElement('span');
       placeholder.className = 'remote-image';
-      placeholder.title = image.getAttribute('src');
-      placeholder.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.image}"/></svg>`;
-      placeholder.append(image.alt || 'obrazek z internetu');
+      placeholder.title = image.alt ? `${image.alt} — kliknij, aby wczytać` : 'Kliknij, aby wczytać';
       remoteImages.set(placeholder, image);
+      showPlaceholderAddress(placeholder);
       image.replaceWith(placeholder);
     }
   }
@@ -111,8 +110,41 @@ function documentContent(path, html, error, allowRemote) {
   return doc;
 }
 
-// Znacznik miejsca → oryginalny <img> (wstawiany dopiero po „Pokaż obrazki”).
+// Znacznik miejsca → oryginalny <img> (wstawiany dopiero po zgodzie użytkownika).
 const remoteImages = new WeakMap();
+
+// Znacznik pokazuje adres obrazka; klik pyta w tym samym miejscu, czy go wczytać.
+function showPlaceholderAddress(placeholder) {
+  const src = remoteImages.get(placeholder).getAttribute('src');
+  placeholder.classList.remove('asking');
+  placeholder.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.image}"/></svg>`;
+  placeholder.append(src.replace(/^https?:\/\//i, ''));
+}
+
+function askToLoad(placeholder) {
+  const host = new URL(remoteImages.get(placeholder).getAttribute('src')).host;
+  placeholder.classList.add('asking');
+  const question = document.createElement('span');
+  question.textContent = `Wczytać obrazek z ${host}?`;
+  const load = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Pokaż', className: 'primary' });
+  const cancel = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Anuluj' });
+  load.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const entry = tabs.find((tab) => tab.content.contains(placeholder));
+    placeholder.replaceWith(remoteImages.get(placeholder));
+    if (entry) updateRemoteBar(entry);
+  });
+  cancel.addEventListener('click', (event) => {
+    event.stopPropagation();
+    showPlaceholderAddress(placeholder);
+  });
+  placeholder.replaceChildren(question, load, cancel);
+}
+
+docs.addEventListener('click', (event) => {
+  const placeholder = event.target.closest('.remote-image');
+  if (placeholder && !placeholder.classList.contains('asking')) askToLoad(placeholder);
+});
 
 function showRemoteImages(entry) {
   entry.remoteAllowed = true;
@@ -134,7 +166,7 @@ function updateRemoteBar(entry) {
   bar.className = 'file-bar file-bar-remote';
   const text = document.createElement('span');
   text.textContent = `Obrazki z internetu (${count}) nie zostały wczytane — ich wczytanie pokaże autorom adresów, że otwierasz ten plik.`;
-  const show = iconButton('Pokaż obrazki', 'image', () => showRemoteImages(entry));
+  const show = iconButton('Pokaż wszystkie', 'image', () => showRemoteImages(entry));
   show.classList.add('primary');
   bar.replaceChildren(text, show);
   bar.hidden = entry !== active;
