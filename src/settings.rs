@@ -63,6 +63,17 @@ pub fn set_appearance(message: &Value) {
     save(&settings);
 }
 
+/// Otwarte karty z ostatniego uruchomienia: `{ "tabs": [{ "path", "position" }], "active": ścieżka }`.
+pub fn session() -> Option<Value> {
+    load().get("session").cloned()
+}
+
+pub fn set_session(session: Value) {
+    let mut settings = load();
+    settings.insert("session".into(), session);
+    save(&settings);
+}
+
 /// `system`, `pl` albo `en`.
 pub fn language() -> String {
     load().get("language").and_then(Value::as_str).unwrap_or("system").to_owned()

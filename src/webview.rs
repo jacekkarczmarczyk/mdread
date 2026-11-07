@@ -267,6 +267,10 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 crate::restart(&paths, active);
             }
         }
+        Some("session") => settings::set_session(serde_json::json!({
+            "tabs": message["tabs"],
+            "active": message["active"],
+        })),
         Some("reload") => {
             if let Some(path) = message["path"].as_str() {
                 crate::reload_path(Path::new(path));

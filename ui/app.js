@@ -35,7 +35,7 @@ function post(message) {
   host.postMessage(message);
 }
 
-function openDocument({ path, title, html, error, anchor, notice }) {
+function openDocument({ path, title, html, error, anchor, notice, position }) {
   const key = path.toLowerCase();
   const existing = findTab(path);
   if (existing) {
@@ -69,6 +69,9 @@ function openDocument({ path, title, html, error, anchor, notice }) {
   const entry = {
     path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
     remoteBar: null, remoteAllowed: false,
+    // Pozycja czytania z poprzedniego uruchomienia: odtwarzana, gdy karta jest widoczna, i jeszcze raz
+    // po wzorach/diagramach (zmieniają wysokość bloków).
+    position: position ?? null, pendingPosition: position ?? null, enhanced: false,
   };
   tab.addEventListener('click', (event) => {
     if (event.target === closeButton) close(entry);
@@ -84,7 +87,11 @@ function openDocument({ path, title, html, error, anchor, notice }) {
   activate(entry);
   updateRemoteBar(entry);
   if (anchor) scrollToAnchor(entry, anchor);
-  enhance(entry);
+  enhance(entry).then(() => {
+    entry.enhanced = true;
+    applyPendingPosition(entry);
+  });
+  saveSession();
 
   if (firstRender) {
     firstRender = false;
@@ -313,6 +320,8 @@ function reloadDocument({ path, html, error, notice }) {
 }
 
 function activate(entry) {
+  // Ukryta karta nie ma wymiarów, więc pozycję czytania zapamiętujemy, zanim zniknie z widoku.
+  if (active && active !== entry && tabs.includes(active)) active.position = readingPosition(active.page);
   for (const other of tabs) {
     const isActive = other === entry;
     other.tab.classList.toggle('active', isActive);
@@ -328,7 +337,36 @@ function activate(entry) {
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
   post({ type: 'active', path: entry.path, title: entry.title });
+  applyPendingPosition(entry);
+  saveSession();
 }
+
+// Sesja (karty, pozycje, aktywna) do odtworzenia przy następnym uruchomieniu; zapis z opóźnieniem,
+// bo przewijanie zmienia pozycję wiele razy na sekundę.
+
+let sessionTimer = null;
+
+function saveSession(immediate = false) {
+  clearTimeout(sessionTimer);
+  const save = () => post({
+    type: 'session',
+    tabs: tabs.map((entry) => ({
+      path: entry.path,
+      position: entry === active ? readingPosition(entry.page) ?? entry.position : entry.position,
+    })),
+    active: active && tabs.includes(active) ? active.path : null,
+  });
+  if (immediate) save();
+  else sessionTimer = setTimeout(save, 400);
+}
+
+function applyPendingPosition(entry) {
+  if (!entry.pendingPosition || entry !== active) return;
+  restoreReadingPosition(entry.page, entry.pendingPosition);
+  if (entry.enhanced) entry.pendingPosition = null;
+}
+
+docs.addEventListener('scroll', () => { if (active) saveSession(); }, true);
 
 // Rozszerzenia: biblioteki ładowane dopiero, gdy dokument ich potrzebuje.
 
@@ -473,10 +511,13 @@ function close(entry) {
   entry.remoteBar?.remove();
   post({ type: 'closed', path: entry.path });
   if (tabs.length === 0) {
+    // Najpierw pusta sesja (od razu, nie z opóźnieniem), potem zamknięcie okna.
+    saveSession(true);
     post({ type: 'close' });
     return;
   }
   if (active === entry) activate(tabs[Math.min(index, tabs.length - 1)]);
+  saveSession();
 }
 
 function cycle(step) {

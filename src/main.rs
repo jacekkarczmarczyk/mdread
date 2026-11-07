@@ -96,6 +96,9 @@ fn main() {
         }));
     }
     webview::send(editors);
+    if !installer {
+        restore_session();
+    }
     open_paths(&paths);
     window::run_loop();
 }
@@ -153,6 +156,19 @@ pub fn open_default_apps() {
     }
 }
 
+/// Karty z poprzedniego uruchomienia (jak w Notatniku): w tej samej kolejności, z pozycją czytania,
+/// na końcu ponownie aktywna karta (strona przełącza na już otwartą). Pliki, których nie ma, są pomijane.
+fn restore_session() {
+    let Some(session) = settings::session() else { return };
+    for tab in session["tabs"].as_array().into_iter().flatten() {
+        let Some(path) = tab["path"].as_str().map(Path::new).filter(|path| path.exists()) else { continue };
+        open_document(path, None, Some(&tab["position"]));
+    }
+    if let Some(active) = session["active"].as_str().map(Path::new).filter(|path| path.exists()) {
+        open_path(active, None);
+    }
+}
+
 /// Otwiera pliki w kartach (strona przełącza na już otwartą kartę tego samego pliku).
 pub fn open_paths(paths: &[PathBuf]) {
     for path in paths {
@@ -168,6 +184,11 @@ const MAX_SIZE: u64 = 20 * 1024 * 1024;
 /// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana. Duży albo binarny plik
 /// dostaje zamiast treści komunikat z wyborem (patrz [`notice`]).
 pub fn open_path(path: &Path, anchor: Option<&str>) {
+    open_document(path, anchor, None);
+}
+
+/// Jak [`open_path`], z pozycją czytania do odtworzenia (karta z poprzedniego uruchomienia).
+fn open_document(path: &Path, anchor: Option<&str>, position: Option<&Value>) {
     let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
     unc::trust_document(&path);
     let mut message = match notice(&path, false) {
@@ -175,6 +196,7 @@ pub fn open_path(path: &Path, anchor: Option<&str>) {
         None => document_message("open", &path),
     };
     message["anchor"] = json!(anchor);
+    message["position"] = position.cloned().unwrap_or(Value::Null);
     if message.get("html").is_some() {
         watcher::watch(&path);
     }
