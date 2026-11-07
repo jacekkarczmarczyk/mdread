@@ -62,6 +62,10 @@ and sanitised by [ammonia](https://github.com/rust-ammonia/ammonia).
 
 ### Built-in installer
 
+Download `mdread.exe` from [Releases](https://github.com/jacekkarczmarczyk/mdread/releases). The file is not
+code-signed, so Windows SmartScreen may show "Windows protected your PC" the first time; choose
+**More info → Run anyway**.
+
 Run `mdread.exe` without arguments from anywhere other than its install folder (for example from Downloads).
 It shows an installer page with these choices:
 
