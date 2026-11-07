@@ -113,6 +113,43 @@ pub fn set_notepad_hidden(hidden: bool) {
     save(&settings);
 }
 
+/// Main window at the last close: normal (restored) rectangle in workspace coordinates and whether it was maximized.
+pub struct WindowPlacement {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
+    pub maximized: bool,
+}
+
+pub fn window_placement() -> Option<WindowPlacement> {
+    let settings = load();
+    let window = settings.get("window")?;
+    let number = |key: &str| window.get(key)?.as_i64().and_then(|value| i32::try_from(value).ok());
+    Some(WindowPlacement {
+        left: number("left")?,
+        top: number("top")?,
+        right: number("right")?,
+        bottom: number("bottom")?,
+        maximized: window.get("maximized").and_then(Value::as_bool).unwrap_or(false),
+    })
+}
+
+pub fn set_window_placement(placement: &WindowPlacement) {
+    let mut settings = load();
+    settings.insert(
+        "window".into(),
+        serde_json::json!({
+            "left": placement.left,
+            "top": placement.top,
+            "right": placement.right,
+            "bottom": placement.bottom,
+            "maximized": placement.maximized,
+        }),
+    );
+    save(&settings);
+}
+
 /// Width of the outline panel in CSS pixels (shared by all files).
 pub fn outline_width() -> Option<u64> {
     load().get("outlineWidth").and_then(Value::as_u64)

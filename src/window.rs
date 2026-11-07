@@ -1,10 +1,11 @@
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::{
     DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR, DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute,
 };
-use windows::Win32::Graphics::Gdi::CreateSolidBrush;
+use windows::Win32::Graphics::Gdi::{CreateSolidBrush, MONITOR_DEFAULTTONULL, MonitorFromRect};
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoTaskMemFree};
 use windows::Win32::System::DataExchange::COPYDATASTRUCT;
@@ -16,13 +17,13 @@ use windows::Win32::UI::Shell::{
 use windows::Win32::UI::HiDpi::GetDpiForSystem;
 use windows::Win32::UI::WindowsAndMessaging::{
     CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GWL_STYLE, GetClientRect, GetMessageW,
-    GetWindowRect,
-    GetSystemMetrics, IDC_ARROW, IsIconic, LoadCursorW, LoadIconW, MSG, PostMessageW, PostQuitMessage,
-    RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOWDEFAULT, SWP_FRAMECHANGED, SWP_NOACTIVATE,
-    SWP_NOZORDER, SetForegroundWindow, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow,
-    TranslateMessage, WINDOW_EX_STYLE, WM_APP, WM_CLOSE, WM_COPYDATA, WM_DESTROY, WM_DPICHANGED, WM_MOVE,
-    WM_SETFOCUS, WM_SIZE, WNDCLASSW, WS_CAPTION, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_OVERLAPPEDWINDOW,
-    WS_SYSMENU, WS_VISIBLE,
+    GetSystemMetrics, GetWindowPlacement, GetWindowRect, IDC_ARROW, IsIconic, LoadCursorW, LoadIconW, MSG,
+    PostMessageW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOWDEFAULT,
+    SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED, SW_SHOWNORMAL, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOZORDER,
+    SetForegroundWindow, SetWindowLongPtrW, SetWindowPlacement, SetWindowPos, SetWindowTextW, ShowWindow,
+    TranslateMessage, WINDOW_EX_STYLE, WINDOWPLACEMENT, WM_APP, WM_CLOSE, WM_COPYDATA, WM_DESTROY, WM_DPICHANGED,
+    WM_MOVE, WM_SETFOCUS, WM_SIZE, WNDCLASSW, WPF_RESTORETOMAXIMIZED, WS_CAPTION, WS_MINIMIZEBOX, WS_OVERLAPPED,
+    WS_OVERLAPPEDWINDOW, WS_SYSMENU, WS_VISIBLE,
 };
 use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
@@ -85,9 +86,52 @@ pub fn create(installer: bool) -> Result<HWND> {
             None,
         )?;
         apply_frame(hwnd, &appearance);
-        let _ = ShowWindow(hwnd, SW_SHOWDEFAULT);
+        // The main window comes back where it was closed (also maximized); the installer always opens centered.
+        let restored = !installer && restore_placement(hwnd);
+        if !restored {
+            let _ = ShowWindow(hwnd, SW_SHOWDEFAULT);
+        }
+        SAVE_PLACEMENT.store(!installer, Ordering::Relaxed);
         Ok(hwnd)
     }
+}
+
+/// Whether the window's placement is saved when it closes (main window, not the installer).
+static SAVE_PLACEMENT: AtomicBool = AtomicBool::new(false);
+
+/// Shows the window with the saved placement; `false` when there is none or it is off every screen (e.g. after
+/// unplugging a monitor), so the caller shows it at the default position.
+fn restore_placement(hwnd: HWND) -> bool {
+    let Some(saved) = settings::window_placement() else { return false };
+    let rect = RECT { left: saved.left, top: saved.top, right: saved.right, bottom: saved.bottom };
+    if rect.right <= rect.left || rect.bottom <= rect.top || unsafe { MonitorFromRect(&rect, MONITOR_DEFAULTTONULL) }.is_invalid() {
+        return false;
+    }
+    let placement = WINDOWPLACEMENT {
+        length: size_of::<WINDOWPLACEMENT>() as u32,
+        showCmd: if saved.maximized { SW_SHOWMAXIMIZED.0 as u32 } else { SW_SHOWNORMAL.0 as u32 },
+        rcNormalPosition: rect,
+        ..Default::default()
+    };
+    unsafe { SetWindowPlacement(hwnd, &placement) }.is_ok()
+}
+
+/// Saves the normal rectangle and the maximized state (also when the window is closed while minimized).
+fn save_placement(hwnd: HWND) {
+    let mut placement = WINDOWPLACEMENT { length: size_of::<WINDOWPLACEMENT>() as u32, ..Default::default() };
+    if unsafe { GetWindowPlacement(hwnd, &mut placement) }.is_err() {
+        return;
+    }
+    let maximized = placement.showCmd == SW_SHOWMAXIMIZED.0 as u32
+        || (placement.showCmd == SW_SHOWMINIMIZED.0 as u32 && placement.flags.contains(WPF_RESTORETOMAXIMIZED));
+    let rect = placement.rcNormalPosition;
+    settings::set_window_placement(&settings::WindowPlacement {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        maximized,
+    });
 }
 
 /// Fits the installer window height to its content (`client_height` in screen pixels) and centers it.
@@ -114,6 +158,7 @@ pub fn fit_client_height(hwnd: HWND, client_height: i32) {
 
 /// "Run without installing": the installer window becomes a regular window (resizing, maximizing).
 pub fn make_normal(hwnd: HWND) {
+    SAVE_PLACEMENT.store(true, Ordering::Relaxed);
     unsafe {
         let scale = GetDpiForSystem() as i32;
         let (width, height) = (1200 * scale / 96, 800 * scale / 96);
@@ -309,6 +354,9 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             LRESULT(0)
         }
         WM_DESTROY => {
+            if SAVE_PLACEMENT.load(Ordering::Relaxed) {
+                save_placement(hwnd);
+            }
             unsafe { PostQuitMessage(0) };
             LRESULT(0)
         }
