@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod instance;
 mod markdown;
 mod timing;
 mod webview;
@@ -15,6 +16,14 @@ use windows::core::{HSTRING, w};
 
 fn main() {
     timing::mark("main");
+    let paths: Vec<PathBuf> = std::env::args_os()
+        .skip(1)
+        .map(|arg| std::path::absolute(&arg).unwrap_or_else(|_| PathBuf::from(arg)))
+        .collect();
+    if !instance::claim(&paths) {
+        return;
+    }
+
     unsafe {
         let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         if let Err(error) = CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() {
@@ -22,12 +31,7 @@ fn main() {
         }
     }
 
-    let path = std::env::args_os().nth(1).map(PathBuf::from);
-    let title = match &path {
-        Some(path) => format!("{} - mdread", file_name(path)),
-        None => "mdread".to_owned(),
-    };
-    let hwnd = window::create(&title).unwrap_or_else(|error| fatal(&format!("CreateWindow: {error}")));
+    let hwnd = window::create().unwrap_or_else(|error| fatal(&format!("CreateWindow: {error}")));
     timing::mark("window shown");
 
     // Callback środowiska potrafi przyjść już w trakcie tworzenia okna, więc start dopiero, gdy HWND istnieje.
@@ -37,23 +41,28 @@ fn main() {
         ));
     }
 
-    if let Some(path) = path {
-        webview::send(open_message(&path));
-    }
-
+    open_paths(&paths);
     window::run_loop();
 }
 
+/// Otwiera pliki w kartach (strona przełącza na już otwartą kartę tego samego pliku).
+pub fn open_paths(paths: &[PathBuf]) {
+    for path in paths {
+        webview::send(open_message(path));
+    }
+}
+
 fn open_message(path: &Path) -> Value {
+    let title = file_name(path);
     match std::fs::read(path) {
         Ok(bytes) => {
             let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes);
             let source = String::from_utf8_lossy(bytes);
             let html = markdown::render(&source);
             timing::mark("markdown rendered");
-            json!({ "type": "open", "path": path, "title": file_name(path), "html": html })
+            json!({ "type": "open", "path": path, "title": title, "html": html })
         }
-        Err(error) => json!({ "type": "error", "message": format!("{}: {error}", path.display()) }),
+        Err(error) => json!({ "type": "open", "path": path, "title": title, "error": error.to_string() }),
     }
 }
 

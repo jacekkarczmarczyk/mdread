@@ -6,6 +6,8 @@
   --border: #d1d9e0;
   --code-bg: #f6f8fa;
   --link: #0969da;
+  --tabbar-bg: #f0f2f5;
+  --tab-hover: #e3e6ea;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,17 +18,126 @@
     --border: #3d444d;
     --code-bg: #151b23;
     --link: #4493f8;
+    --tabbar-bg: #010409;
+    --tab-hover: #151b23;
   }
 }
 
 html, body {
+  height: 100%;
   margin: 0;
   background: var(--bg);
   color: var(--fg);
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   font: 16px/1.5 -apple-system, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+[hidden] { display: none !important; }
+
+/* Pasek kart */
+
+#tabbar {
+  display: flex;
+  align-items: flex-end;
+  flex: none;
+  gap: 4px;
+  padding: 6px 8px 0;
+  background: var(--tabbar-bg);
+  font: 13px/1 "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  user-select: none;
+}
+
+#tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: 6px;
+  min-width: 72px;
+  max-width: 220px;
+  height: 32px;
+  padding: 0 6px 0 12px;
+  border-radius: 8px 8px 0 0;
+  color: var(--muted);
+  cursor: default;
+}
+
+.tab:hover { background: var(--tab-hover); }
+.tab.active { background: var(--bg); color: var(--fg); }
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tab-close, #new-tab {
+  flex: none;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.tab-close {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  visibility: hidden;
+}
+
+.tab:hover .tab-close, .tab.active .tab-close { visibility: visible; }
+.tab-close:hover, #new-tab:hover { background: var(--tab-hover); }
+.tab.active .tab-close:hover { background: var(--tabbar-bg); }
+
+#new-tab {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+/* Dokumenty: każda karta przewija się osobno, więc pozycja zostaje przy przełączaniu */
+
+#docs {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.page {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  outline: none;
+}
+
+#empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--muted);
+}
+
+kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 12px "Cascadia Mono", Consolas, monospace;
 }
 
 .markdown-body {

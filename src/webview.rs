@@ -1,12 +1,14 @@
 //! WebView2: środowisko, kontroler, wbudowane zasoby UI i wymiana wiadomości ze stroną.
 
 use std::cell::RefCell;
+use std::path::PathBuf;
 
 use serde_json::Value;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
     CreateCoreWebView2EnvironmentWithOptions, ICoreWebView2, ICoreWebView2Controller,
-    ICoreWebView2Environment, ICoreWebView2WebResourceRequestedEventArgs,
+    ICoreWebView2Environment, ICoreWebView2File, ICoreWebView2WebMessageReceivedEventArgs,
+    ICoreWebView2WebMessageReceivedEventArgs2, ICoreWebView2WebResourceRequestedEventArgs,
     ICoreWebView2WebResourceResponse,
 };
 use webview2_com::{
@@ -18,9 +20,9 @@ use windows::Win32::Foundation::{E_POINTER, HWND, RECT};
 use windows::Win32::System::Com::IStream;
 use windows::Win32::UI::Shell::SHCreateMemStream;
 use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
-use windows::core::{Error, HSTRING, PWSTR, Result};
+use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
-use crate::timing;
+use crate::{timing, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -149,7 +151,7 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
                     args.WebMessageAsJson(&mut json)?;
                     let json = CoTaskMemPWSTR::from(json).to_string();
                     if let Ok(message) = serde_json::from_str::<Value>(&json) {
-                        on_page_message(&message);
+                        on_page_message(&message, &args);
                     }
                 }
                 Ok(())
@@ -167,8 +169,13 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
     Ok(())
 }
 
-fn on_page_message(message: &Value) {
+fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventArgs) {
+    let hwnd = STATE.with_borrow(|state| state.hwnd);
     match message["type"].as_str() {
+        Some("title") => window::set_title(hwnd, message["title"].as_str()),
+        Some("openDialog") => window::request_open_dialog(hwnd),
+        Some("drop") => crate::open_paths(&dropped_paths(args)),
+        Some("close") => window::request_close(hwnd),
         Some("ready") => {
             timing::mark("page ready");
             let (webview, pending) = STATE.with_borrow_mut(|state| {
@@ -186,6 +193,32 @@ fn on_page_message(message: &Value) {
         Some("rendered") => timing::mark("content rendered"),
         _ => {}
     }
+}
+
+/// Ścieżki plików upuszczonych na stronę (przekazane przez `postMessageWithAdditionalObjects`).
+fn dropped_paths(args: &ICoreWebView2WebMessageReceivedEventArgs) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    let Ok(args) = args.cast::<ICoreWebView2WebMessageReceivedEventArgs2>() else {
+        return paths;
+    };
+    unsafe {
+        let Ok(objects) = args.AdditionalObjects() else {
+            return paths;
+        };
+        let mut count = 0;
+        let _ = objects.Count(&mut count);
+        for index in 0..count {
+            let Ok(file) = objects.GetValueAtIndex(index).and_then(|object| object.cast::<ICoreWebView2File>())
+            else {
+                continue;
+            };
+            let mut path = PWSTR::null();
+            if file.Path(&mut path).is_ok() {
+                paths.push(PathBuf::from(CoTaskMemPWSTR::from(path).to_string()));
+            }
+        }
+    }
+    paths
 }
 
 fn serve_resource(env: &ICoreWebView2Environment, args: &ICoreWebView2WebResourceRequestedEventArgs) -> Result<()> {
