@@ -102,6 +102,17 @@ pub fn set_zoom(zoom: f64) {
     save(&settings);
 }
 
+/// Notatnik usunięty z listy edytorów (przycisk × w menu „Edytuj”).
+pub fn notepad_hidden() -> bool {
+    load().get("notepadHidden").and_then(Value::as_bool).unwrap_or(false)
+}
+
+pub fn set_notepad_hidden(hidden: bool) {
+    let mut settings = load();
+    settings.insert("notepadHidden".into(), Value::from(hidden));
+    save(&settings);
+}
+
 /// Szerokość panelu spisu treści w pikselach CSS (wspólna dla wszystkich plików).
 pub fn outline_width() -> Option<u64> {
     load().get("outlineWidth").and_then(Value::as_u64)

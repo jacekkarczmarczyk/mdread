@@ -36,12 +36,16 @@ fn notepad() -> PathBuf {
     PathBuf::from(windows).join(r"System32\notepad.exe")
 }
 
-fn selected() -> PathBuf {
-    settings::editor().unwrap_or_else(notepad)
+/// Program przycisku „Edytuj”: wybrany, bez wyboru Notatnik, a gdy Notatnik usunięto z listy, pierwszy
+/// z listy. `None` przy pustej liście (strona wtedy otwiera wybór programu).
+fn selected() -> Option<PathBuf> {
+    settings::editor()
+        .or_else(|| (!settings::notepad_hidden()).then(notepad))
+        .or_else(|| editors().into_iter().find(|path| path.exists()))
 }
 
 pub fn open(path: &Path) {
-    let program = selected();
+    let Some(program) = selected() else { return };
     if let Err(error) = Command::new(&program).arg(path).spawn() {
         let message = tf("error.editor", &[("program", &program.display().to_string())]);
         crate::show_error(&format!("{message}\n\n{error}"));
@@ -69,38 +73,50 @@ fn editors() -> Vec<PathBuf> {
     editors
 }
 
-/// Dopisuje program do listy i go wybiera.
+/// Dopisuje program do listy i go wybiera (Notatnik wraca na listę, jeśli był usunięty).
 pub fn add(program: &Path) {
-    let mut editors = editors();
-    if !same(program, &notepad()) && !editors.iter().any(|path| same(path, program)) {
-        editors.push(program.to_owned());
-        settings::set_editors(&editors);
+    if same(program, &notepad()) {
+        settings::set_notepad_hidden(false);
+    } else {
+        let mut editors = editors();
+        if !editors.iter().any(|path| same(path, program)) {
+            editors.push(program.to_owned());
+            settings::set_editors(&editors);
+        }
     }
     select(program);
 }
 
-/// Usuwa program z listy; jeśli był wybrany, wraca Notatnik.
+/// Usuwa program z listy (także Notatnik); jeśli był wybrany, „Edytuj” bierze Notatnik albo pierwszy z listy.
 pub fn remove(program: &Path) {
+    if same(program, &notepad()) {
+        settings::set_notepad_hidden(true);
+        return;
+    }
     let mut editors = editors();
     editors.retain(|path| !same(path, program));
     settings::set_editors(&editors);
-    if same(&selected(), program) {
+    if settings::editor().is_some_and(|chosen| same(&chosen, program)) {
         settings::set_editor(None);
     }
 }
 
-/// Lista dla strony: Notatnik i zapisane edytory (istniejące na dysku), z nazwą, ikoną i zaznaczeniem.
+/// Lista dla strony: Notatnik (jeśli nie usunięty) i zapisane edytory istniejące na dysku, z nazwą, ikoną
+/// i zaznaczeniem.
 pub fn info() -> Value {
     let selected = selected();
-    let programs = std::iter::once((notepad(), false))
-        .chain(editors().into_iter().filter(|path| path.exists()).map(|path| (path, true)));
+    let programs = (!settings::notepad_hidden())
+        .then(notepad)
+        .into_iter()
+        .chain(editors().into_iter().filter(|path| path.exists()));
     let items: Vec<Value> = programs
-        .map(|(path, removable)| {
+        .map(|path| {
             let (name, icon) = details(&path);
-            json!({ "path": path, "name": name, "icon": icon, "removable": removable, "selected": same(&path, &selected) })
+            let is_selected = selected.as_deref().is_some_and(|chosen| same(&path, chosen));
+            json!({ "path": path, "name": name, "icon": icon, "selected": is_selected })
         })
         .collect();
-    let selected_name = details(&selected).0;
+    let selected_name = selected.map(|path| details(&path).0);
     json!({ "type": "editors", "items": items, "selectedName": selected_name })
 }
 

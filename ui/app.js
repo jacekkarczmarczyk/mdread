@@ -730,13 +730,18 @@ document.getElementById('new-tab').addEventListener('click', () => post({ type: 
 
 // Edycja w zewnętrznym programie
 
+// Pusta lista edytorów (usunięty także Notatnik): „Edytuj” otwiera wybór programu, a host po wyborze
+// otwiera w nim plik.
+let hasEditor = true;
+
 function editActive() {
-  if (active) post({ type: 'edit', path: active.path });
+  if (active) post(hasEditor ? { type: 'edit', path: active.path } : { type: 'chooseEditor' });
 }
 
-// Lista edytorów od hosta: Notatnik i zapisane programy, każdy z ikoną z własnego pliku exe.
+// Lista edytorów od hosta: Notatnik (o ile nie usunięty) i zapisane programy, każdy z ikoną z pliku exe.
 function showEditors({ items, selectedName }) {
-  editButton.title = t('edit.title', { name: selectedName });
+  hasEditor = selectedName != null;
+  editButton.title = hasEditor ? t('edit.title', { name: selectedName }) : t('edit.noProgram');
   editorList.replaceChildren(...items.map((item) => {
     const row = document.createElement('div');
     row.className = 'menu-row';
@@ -746,13 +751,10 @@ function showEditors({ items, selectedName }) {
     Object.assign(choose.dataset, { action: 'selectEditor', path: item.path });
     if (item.icon) choose.append(Object.assign(document.createElement('img'), { src: item.icon, alt: '', className: 'menu-icon' }));
     choose.append(item.name);
-    row.append(choose);
-    if (item.removable) {
-      const remove = Object.assign(document.createElement('button'), { type: 'button', title: t('edit.remove'), className: 'menu-remove' });
-      remove.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.close}"/></svg>`;
-      Object.assign(remove.dataset, { action: 'removeEditor', path: item.path });
-      row.append(remove);
-    }
+    const remove = Object.assign(document.createElement('button'), { type: 'button', title: t('edit.remove'), className: 'menu-remove' });
+    remove.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS.close}"/></svg>`;
+    Object.assign(remove.dataset, { action: 'removeEditor', path: item.path });
+    row.append(choose, remove);
     return row;
   }));
 }

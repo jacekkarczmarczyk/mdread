@@ -35,6 +35,7 @@
   "edit.choose": "Choose editor",
   "edit.chooseProgram": "Add program…",
   "edit.remove": "Remove from list",
+  "edit.noProgram": "Choose a program to edit with (Ctrl+E)",
   "editor.notepad": "Notepad",
 
   "remote.clickToLoad": "Click to load",

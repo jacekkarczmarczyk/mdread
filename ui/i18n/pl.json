@@ -35,6 +35,7 @@
   "edit.choose": "Wybierz edytor",
   "edit.chooseProgram": "Dodaj program…",
   "edit.remove": "Usuń z listy",
+  "edit.noProgram": "Wybierz program do edycji (Ctrl+E)",
   "editor.notepad": "Notatnik",
 
   "remote.clickToLoad": "Kliknij, aby wczytać",
