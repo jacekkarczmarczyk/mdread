@@ -1014,14 +1014,19 @@ function markCurrentHeading() {
   // Jedna kreska z lewej od bieżącego do ostatniego widocznego nagłówka (pozycje są kolejne na liście).
   const marked = outlineItems.filter(({ item }) => item.classList.contains('current') || item.classList.contains('in-view'));
   outlineView.hidden = !marked.length;
-  if (marked.length) {
-    const first = marked[0].item;
-    const last = marked.at(-1).item;
-    outlineView.style.top = `${first.offsetTop}px`;
-    outlineView.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
-    outlineList.append(outlineView);
-  }
-  current?.item.scrollIntoView({ block: 'nearest' });
+  if (!marked.length) return;
+  const first = marked[0].item;
+  const last = marked.at(-1).item;
+  const rangeTop = first.offsetTop;
+  const rangeBottom = last.offsetTop + last.offsetHeight;
+  outlineView.style.top = `${rangeTop}px`;
+  outlineView.style.height = `${rangeBottom - rangeTop}px`;
+  outlineList.append(outlineView);
+  // Spis przewija się tak, żeby widać było cały zaznaczony zakres (jak „nearest” dla całego zakresu); gdy jest
+  // wyższy niż panel albo wystaje u góry, bieżący nagłówek trafia na górę panelu.
+  const view = outlineList.clientHeight;
+  if (rangeTop < outlineList.scrollTop || rangeBottom - rangeTop > view) outlineList.scrollTop = rangeTop;
+  else if (rangeBottom > outlineList.scrollTop + view) outlineList.scrollTop = rangeBottom - view;
 }
 
 let outlineFrame = 0;
