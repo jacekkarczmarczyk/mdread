@@ -114,3 +114,14 @@ off in the gear menu. When you turn it back on, the bar shows right away whether
 ### Editor
 
 **Edit ▾** lets you pick the editing program or add your own.
+
+## Why only a viewer
+
+Most Markdown files are read far more often than they are written: Claude's plans, documentation, READMEs.
+For that, the usual tools fall short. Windows Notepad shows only basic Markdown, with no diagrams or
+formulas. Notepad++ needs a plugin, and you can't copy text from its preview. VS Code and PhpStorm
+render everything, but they take too long to start just to read one file. MDRead opens a `.md` file
+instantly and shows all of it. When you do want to change something, <kbd>Ctrl</kbd>+<kbd>E</kbd> opens
+the file in your favourite editor.
+
+Want to edit files in MDRead itself, or add other features? Feel free to clone the project and vibe it yourself! 😊

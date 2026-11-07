@@ -115,3 +115,14 @@ Sprawdzanie wyłączysz w zębatce. Po jego włączeniu pasek od razu pokaże, c
 ### Edytor
 
 **Edytuj ▾** pozwala wybrać program do edycji albo dodać własny.
+
+## Dlaczego tylko podgląd
+
+Pliki Markdown częściej się czyta, niż pisze: plany od Claude'a, dokumentację, README. Do samego
+czytania zwykłe narzędzia się nie sprawdzają. Notatnik Windows pokazuje tylko podstawowy Markdown, bez
+diagramów i wzorów. Notepad++ potrzebuje wtyczki, a z jej podglądu nie skopiujesz tekstu. VS Code i
+PhpStorm wyświetlą wszystko, ale za długo się uruchamiają, żeby otwierać w nich jeden plik do
+przeczytania. MDRead otwiera plik `.md` natychmiast i pokazuje go w całości. Gdy chcesz coś zmienić,
+<kbd>Ctrl</kbd>+<kbd>E</kbd> otworzy plik w ulubionym edytorze.
+
+Chcesz edytować pliki w samym MDRead albo dodać inne funkcje? Sklonuj projekt i dopisz to sobie z AI! 😊
