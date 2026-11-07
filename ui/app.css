@@ -194,6 +194,8 @@ body {
 }
 
 .menu button:hover { background: var(--tab-hover); }
+/* Pozycje w jednej linii: menu poszerza się do najdłuższej */
+#appearance-menu button { white-space: nowrap; }
 
 /* Pozycja z ikoną (edytory, „Dodaj program…”) i przyciskiem usuwania po prawej */
 .menu button:has(.menu-icon) { display: flex; align-items: center; gap: 8px; }
