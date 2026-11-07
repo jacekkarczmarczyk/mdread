@@ -51,7 +51,7 @@ fn local_url(url: &str, base_dir: &Path) -> Option<String> {
         None => (url, None),
     };
     let path = match scheme(target) {
-        Some("file") => PathBuf::from(percent_decode(target.trim_start_matches("file:").trim_start_matches('/'))),
+        Some("file") => file_url_path(&target["file:".len()..]),
         Some(_) => return None,
         None => base_dir.join(percent_decode(target)),
     };
@@ -61,6 +61,20 @@ fn local_url(url: &str, base_dir: &Path) -> Option<String> {
         local.push_str(fragment);
     }
     Some(local)
+}
+
+/// Ścieżka z adresu `file:` (bez schematu): `///C:/x` i `C:/x` to dysk lokalny, `//serwer/udział/x` to UNC.
+fn file_url_path(rest: &str) -> PathBuf {
+    let rest = percent_decode(rest);
+    let path = match rest.strip_prefix("//") {
+        Some(rest) => match rest.strip_prefix('/') {
+            Some(local) => local.to_owned(),
+            None if rest.get(1..2) == Some(":") => rest.to_owned(),
+            None => format!("//{rest}"),
+        },
+        None => rest,
+    };
+    PathBuf::from(path.replace('/', "\\"))
 }
 
 /// Schemat adresu (`http`, `mailto`…). Jedna litera to dysk Windows (`C:`), nie schemat.
@@ -152,6 +166,14 @@ mod tests {
     #[test]
     fn drops_javascript_links() {
         assert!(!html("[x](javascript:alert(1))").contains("javascript:"));
+    }
+
+    #[test]
+    fn parses_file_urls() {
+        assert_eq!(file_url_path("///C:/docs/a%20b.png"), PathBuf::from(r"C:\docs\a b.png"));
+        assert_eq!(file_url_path("//C:/docs/a.png"), PathBuf::from(r"C:\docs\a.png"));
+        assert_eq!(file_url_path("//server/share/a.png"), PathBuf::from(r"\\server\share\a.png"));
+        assert_eq!(file_url_path("C:/docs/a.png"), PathBuf::from(r"C:\docs\a.png"));
     }
 
     #[test]

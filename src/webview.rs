@@ -24,7 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
-use crate::{assets, clipboard, editor, links, menu, settings, timing, watcher, window};
+use crate::{assets, clipboard, editor, links, menu, settings, timing, unc, watcher, window};
 
 // `.localhost` rozwiązuje się bez DNS; przy `.local` Windows pytał mDNS i nawigacja trwała ~2 s.
 const ORIGIN: &str = "https://mdread.localhost/";
@@ -183,13 +183,14 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             })),
             &mut token,
         )?;
-        // Strona nigdy nie opuszcza index.html: linki obsługuje skrypt, a nowe okna są blokowane.
+        // Strona nigdy nie opuszcza index.html (także nie przechodzi na pliki spod /local/): linki obsługuje
+        // skrypt, a nowe okna są blokowane.
         webview.add_NavigationStarting(
             &NavigationStartingEventHandler::create(Box::new(|_, args| {
                 if let Some(args) = args {
                     let mut uri = PWSTR::null();
                     args.Uri(&mut uri)?;
-                    if !CoTaskMemPWSTR::from(uri).to_string().starts_with(ORIGIN) {
+                    if CoTaskMemPWSTR::from(uri).to_string() != format!("{ORIGIN}index.html") {
                         args.SetCancel(true)?;
                     }
                 }
@@ -369,9 +370,13 @@ fn set_background(controller: &ICoreWebView2Controller, color: Option<u32>) {
     }
 }
 
-/// Obrazek z dysku dla `<img>` w dokumencie. Inne typy plików nie są serwowane.
+/// Obrazek z dysku dla `<img>` w dokumencie. Inne typy plików nie są serwowane, a ścieżki
+/// sieciowe tylko z serwerów, z których otwarto dokument (patrz `unc`).
 fn local_image(encoded_path: &str) -> Option<(Vec<u8>, &'static str)> {
-    let path = PathBuf::from(percent_decode(encoded_path));
+    let path = PathBuf::from(percent_decode(encoded_path).replace('/', "\\"));
+    if !unc::may_read(&path) {
+        return None;
+    }
     let extension = path.extension()?.to_str()?.to_ascii_lowercase();
     let mime = match extension.as_str() {
         "png" => "image/png",

@@ -10,6 +10,7 @@ mod menu;
 mod markdown;
 mod settings;
 mod timing;
+mod unc;
 mod watcher;
 mod webview;
 mod window;
@@ -103,6 +104,7 @@ pub fn open_paths(paths: &[PathBuf]) {
 /// Otwiera plik w karcie i przewija do kotwicy `anchor`, jeśli podana.
 pub fn open_path(path: &Path, anchor: Option<&str>) {
     let path = std::path::absolute(path).unwrap_or_else(|_| path.to_owned());
+    unc::trust_document(&path);
     let mut message = document_message("open", &path);
     message["anchor"] = json!(anchor);
     if message.get("html").is_some() {

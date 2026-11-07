@@ -7,10 +7,14 @@ use serde_json::{Value, json};
 
 use crate::settings;
 
-const NOTEPAD: &str = "notepad.exe";
+/// Notatnik pełną ścieżką z katalogu systemowego, żeby nie uruchomić przypadkiem innego `notepad.exe`.
+fn notepad() -> PathBuf {
+    let windows = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
+    PathBuf::from(windows).join(r"System32\notepad.exe")
+}
 
 pub fn open(path: &Path) {
-    let program = settings::editor().unwrap_or_else(|| PathBuf::from(NOTEPAD));
+    let program = settings::editor().unwrap_or_else(notepad);
     if let Err(error) = Command::new(&program).arg(path).spawn() {
         crate::show_error(&format!("Nie udało się uruchomić edytora {}.\n\n{error}", program.display()));
     }
