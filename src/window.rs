@@ -13,12 +13,15 @@ use windows::Win32::UI::Shell::Common::COMDLG_FILTERSPEC;
 use windows::Win32::UI::Shell::{
     FOS_ALLOWMULTISELECT, FOS_FILEMUSTEXIST, FileOpenDialog, IFileOpenDialog, SIGDN_FILESYSPATH,
 };
+use windows::Win32::UI::HiDpi::GetDpiForSystem;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, IDC_ARROW,
-    IsIconic, LoadCursorW, LoadIconW, MSG, PostMessageW, PostQuitMessage, RegisterClassW, SW_RESTORE,
-    SW_SHOWDEFAULT, SWP_NOACTIVATE, SWP_NOZORDER, SetForegroundWindow, SetWindowPos,
-    SetWindowTextW, ShowWindow, TranslateMessage, WINDOW_EX_STYLE, WM_APP, WM_CLOSE, WM_COPYDATA,
-    WM_DESTROY, WM_DPICHANGED, WM_MOVE, WM_SETFOCUS, WM_SIZE, WNDCLASSW, WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT, CreateWindowExW, DefWindowProcW, DispatchMessageW, GWL_STYLE, GetMessageW,
+    GetSystemMetrics, IDC_ARROW, IsIconic, LoadCursorW, LoadIconW, MSG, PostMessageW, PostQuitMessage,
+    RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOWDEFAULT, SWP_FRAMECHANGED, SWP_NOACTIVATE,
+    SWP_NOZORDER, SetForegroundWindow, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow,
+    TranslateMessage, WINDOW_EX_STYLE, WM_APP, WM_CLOSE, WM_COPYDATA, WM_DESTROY, WM_DPICHANGED, WM_MOVE,
+    WM_SETFOCUS, WM_SIZE, WNDCLASSW, WS_CAPTION, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_OVERLAPPEDWINDOW,
+    WS_SYSMENU, WS_VISIBLE,
 };
 use windows::core::{BOOL, HSTRING, PCWSTR, Result, w};
 
@@ -36,8 +39,21 @@ const MARKDOWN_FILTERS: &[(&str, &str)] =
     &[("dialog.markdown", "*.md;*.markdown;*.mdown;*.mkd"), ("dialog.allFiles", "*.*")];
 const PROGRAM_FILTERS: &[(&str, &str)] = &[("dialog.programs", "*.exe")];
 
-pub fn create() -> Result<HWND> {
+/// Rozmiar okna instalatora (piksele przy 100% skalowania): sam panel, bez kart.
+const INSTALLER_SIZE: (i32, i32) = (600, 700);
+
+pub fn create(installer: bool) -> Result<HWND> {
     let appearance = settings::appearance();
+    // Instalator: małe okno jak okno dialogowe (bez maksymalizacji i zmiany rozmiaru), na środku ekranu.
+    let (style, x, y, width, height) = if installer {
+        let scale = unsafe { GetDpiForSystem() } as i32;
+        let (width, height) = (INSTALLER_SIZE.0 * scale / 96, INSTALLER_SIZE.1 * scale / 96);
+        let (screen_width, screen_height) = unsafe { (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) };
+        let style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+        (style, (screen_width - width) / 2, (screen_height - height) / 2, width, height)
+    } else {
+        (WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT)
+    };
     unsafe {
         let instance = HINSTANCE(GetModuleHandleW(None)?.0);
         // Tło w kolorze ostatniego motywu, żeby przed załadowaniem strony nie błysnęło białe okno.
@@ -57,11 +73,11 @@ pub fn create() -> Result<HWND> {
             WINDOW_EX_STYLE::default(),
             CLASS_NAME,
             w!("MDRead"),
-            WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
+            style,
+            x,
+            y,
+            width,
+            height,
             None,
             None,
             Some(instance),
@@ -70,6 +86,25 @@ pub fn create() -> Result<HWND> {
         apply_frame(hwnd, &appearance);
         let _ = ShowWindow(hwnd, SW_SHOWDEFAULT);
         Ok(hwnd)
+    }
+}
+
+/// „Uruchom bez instalacji”: okno instalatora staje się zwykłym oknem (zmiana rozmiaru, maksymalizacja).
+pub fn make_normal(hwnd: HWND) {
+    unsafe {
+        let scale = GetDpiForSystem() as i32;
+        let (width, height) = (1200 * scale / 96, 800 * scale / 96);
+        let (screen_width, screen_height) = (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+        SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_OVERLAPPEDWINDOW | WS_VISIBLE).0 as isize);
+        let _ = SetWindowPos(
+            hwnd,
+            None,
+            (screen_width - width) / 2,
+            (screen_height - height) / 2,
+            width,
+            height,
+            SWP_NOZORDER | SWP_FRAMECHANGED,
+        );
     }
 }
 

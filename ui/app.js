@@ -584,7 +584,6 @@ const installerForm = document.getElementById('installer-form');
 const installerError = document.getElementById('installer-error');
 
 function showInstaller({ editors, directory }) {
-  document.body.classList.add('installing');
   document.getElementById('installer').hidden = false;
   document.getElementById('installer-intro').textContent = t('install.intro', { directory });
   document.getElementById('installer-editors').replaceChildren(...editors.map((item) => {
@@ -610,8 +609,10 @@ function showInstaller({ editors, directory }) {
   });
   install.classList.add('primary');
   const skip = iconButton(t('install.skip'), 'open', () => {
-    document.body.classList.remove('installing');
+    // Host zamienia małe okno instalatora na zwykłe.
+    delete document.documentElement.dataset.installer;
     document.getElementById('installer').hidden = true;
+    post({ type: 'skipInstall' });
   });
   document.getElementById('installer-buttons').replaceChildren(install, skip);
 }

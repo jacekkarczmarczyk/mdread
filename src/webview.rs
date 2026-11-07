@@ -39,6 +39,8 @@ struct State {
     page_ready: bool,
     pending: Vec<String>,
     active_path: Option<PathBuf>,
+    /// Okno instalatora: strona od pierwszej klatki pokazuje tylko panel instalacji.
+    installer: bool,
 }
 
 thread_local! {
@@ -111,6 +113,10 @@ pub fn focus() {
             let _ = controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
         }
     }
+}
+
+pub fn set_installer(installer: bool) {
+    STATE.with_borrow_mut(|state| state.installer = installer);
 }
 
 /// Główne okno, jeśli już istnieje.
@@ -247,6 +253,10 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
             if let Some(url) = message["url"].as_str() {
                 links::open(url);
             }
+        }
+        Some("skipInstall") => {
+            STATE.with_borrow_mut(|state| state.installer = false);
+            window::make_normal(hwnd);
         }
         Some("install") => match install::install(message) {
             Ok(()) => {
@@ -385,10 +395,11 @@ fn with_appearance(html: &[u8]) -> String {
     let appearance = settings::appearance();
     let dark = if appearance.mode == "system" { window::system_dark() } else { appearance.mode == "dark" };
     let scheme = if dark { "dark" } else { "light" };
+    let installer = if STATE.with_borrow(|state| state.installer) { " data-installer" } else { "" };
     String::from_utf8_lossy(html).replacen(
         "<html lang=\"pl\">",
         &format!(
-            "<html lang=\"{}\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\">",
+            "<html lang=\"{}\" data-theme=\"{}\" data-mode=\"{}\" data-scheme=\"{scheme}\"{installer}>",
             i18n::current(),
             appearance.theme,
             appearance.mode

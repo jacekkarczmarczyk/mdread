@@ -320,19 +320,16 @@ img { max-width: 100%; }
 
 .error { padding: 32px 40px; color: #d1242f; }
 
-/* Instalator: strona zamiast kart i dokumentów */
-body.installing #tabbar, body.installing #file-bars, body.installing #docs { display: none; }
+/* Instalator: małe okno z samym panelem (host wstawia data-installer do <html> od pierwszej klatki) */
+:root[data-installer] #tabbar, :root[data-installer] #file-bars, :root[data-installer] #docs { display: none; }
+:root[data-installer] #installer[hidden] { display: block !important; }
 
-#installer { flex: 1; overflow: auto; display: grid; place-items: start center; padding: 48px 24px; }
+#installer { flex: 1; overflow: auto; }
 
 .installer-card {
   display: grid;
   gap: 10px;
-  width: min(560px, 100%);
   padding: 28px 32px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--tabbar-bg);
   font: 14px/1.5 var(--font-ui);
 }
 

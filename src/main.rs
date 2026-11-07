@@ -78,7 +78,8 @@ fn main() {
         }
     }
 
-    let hwnd = window::create().unwrap_or_else(|error| fatal(&format!("CreateWindow: {error}")));
+    let hwnd = window::create(installer).unwrap_or_else(|error| fatal(&format!("CreateWindow: {error}")));
+    webview::set_installer(installer);
     timing::mark("window shown");
     watcher::start(hwnd);
 
