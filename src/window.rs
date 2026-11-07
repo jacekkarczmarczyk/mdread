@@ -226,8 +226,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         }
         WM_APP_CHOOSE_EDITOR => {
             if let Some(program) = show_open_dialog(hwnd, PROGRAM_FILTERS, false).ok().and_then(|paths| paths.into_iter().next()) {
+                // Dodany program staje się domyślny i od razu otwiera bieżący plik (jak wybór z listy).
                 editor::add(&program);
                 webview::send(editor::info());
+                if let Some(document) = webview::active_path() {
+                    editor::open(&document);
+                }
             }
             LRESULT(0)
         }

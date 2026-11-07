@@ -618,7 +618,12 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape') cl
 dropdown(editMenuButton, editMenu, (item) => {
   const { action, path } = item.dataset;
   if (action === 'chooseEditor') post({ type: action });
-  else if (action === 'selectEditor' || action === 'removeEditor') post({ type: action, path });
+  else if (action === 'removeEditor') post({ type: action, path });
+  else if (action === 'selectEditor') {
+    // Wybór z listy: program staje się domyślny i od razu otwiera bieżący plik.
+    post({ type: action, path });
+    editActive();
+  }
 });
 
 // Wygląd: motyw i tryb. Host wstawia startowe data-theme/data-mode/data-scheme do <html>,
