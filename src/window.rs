@@ -329,6 +329,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                             webview::send(message);
                         }
                     }
+                    update::Outcome::Notes(path) => crate::open_paths(&[path]),
                     update::Outcome::CheckFailed(error) => {
                         webview::send(serde_json::json!({ "type": "updateCheckFailed", "message": error }));
                     }

@@ -30,6 +30,7 @@ use crate::{install, settings, webview};
 pub const WM_APP_UPDATE: u32 = WM_APP + 4;
 
 const API: &str = "https://api.github.com/repos/jacekkarczmarczyk/mdread/releases/latest";
+const API_TAG: &str = "https://api.github.com/repos/jacekkarczmarczyk/mdread/releases/tags/v";
 const PAGES: &str = "https://github.com/jacekkarczmarczyk/mdread/releases/";
 const DOWNLOADS: &str = "https://github.com/jacekkarczmarczyk/mdread/releases/download/";
 const CHECK_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
@@ -44,6 +45,8 @@ pub enum Outcome {
     Checked(Value, bool),
     /// A check started by the switch failed (an automatic one fails silently).
     CheckFailed(String),
+    /// Release notes of this version, saved to a file to open in a tab.
+    Notes(PathBuf),
     Downloaded(PathBuf),
     DownloadFailed(String),
 }
@@ -124,9 +127,7 @@ static MANUAL: AtomicBool = AtomicBool::new(false);
 
 /// The latest release: version, page, download address and SHA-256 of mdread.exe (addresses checked).
 fn fetch_latest() -> Result<Value, String> {
-    // A debug build can test a failed check (`MDREAD_PRETEND_OFFLINE`): `.invalid` never resolves.
-    let offline = cfg!(debug_assertions) && std::env::var_os("MDREAD_PRETEND_OFFLINE").is_some();
-    let body = get(if offline { "https://mdread.invalid/" } else { API }, "application/vnd.github+json", MAX_API_RESPONSE)?;
+    let body = get(API, "application/vnd.github+json", MAX_API_RESPONSE)?;
     let release: Value = serde_json::from_slice(&body).map_err(|error| error.to_string())?;
     let version = release["tag_name"].as_str().filter(|tag| parse_version(tag).is_some()).ok_or("tag_name")?;
     let page = release["html_url"].as_str().filter(|url| url.starts_with(PAGES)).ok_or("html_url")?;
@@ -147,6 +148,42 @@ fn fetch_latest() -> Result<Value, String> {
         "sha256": sha256.to_ascii_lowercase(),
         "checkedAt": now(),
     }))
+}
+
+/// The first run of a newer version (after the update bar, `--updated`, or installed by hand) opens its release
+/// notes in a tab; the first run after installation only records the version. Without a network: nothing.
+pub fn notes_after_update(hwnd: HWND, updated: bool) {
+    let current = current_version();
+    let last = settings::last_version();
+    if last.as_deref() == Some(current.as_str()) {
+        return;
+    }
+    settings::set_last_version(&current);
+    // `--updated` also covers copies from before `lastVersion` was saved.
+    if !(updated || last.is_some_and(|last| is_newer(&current, &last))) || !may_update() {
+        return;
+    }
+    let hwnd = hwnd.0 as isize;
+    std::thread::spawn(move || {
+        if let Ok(path) = fetch_notes(&current) {
+            report(hwnd, Outcome::Notes(path));
+        }
+    });
+}
+
+fn fetch_notes(version: &str) -> Result<PathBuf, String> {
+    let body = get(&format!("{API_TAG}{version}"), "application/vnd.github+json", MAX_API_RESPONSE)?;
+    let release: Value = serde_json::from_slice(&body).map_err(|error| error.to_string())?;
+    let notes = release["body"].as_str().ok_or("body")?;
+    let mut text = format!("# MDRead {version}: what's new\n\n{}\n", notes.trim());
+    if let Some(page) = release["html_url"].as_str().filter(|url| url.starts_with(PAGES)) {
+        text.push_str(&format!("\n[Release page]({page})\n"));
+    }
+    let dir = std::env::temp_dir().join("mdread-update");
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    let path = dir.join(format!("MDRead {version} - what's new.md"));
+    std::fs::write(&path, text).map_err(|error| error.to_string())?;
+    Ok(path)
 }
 
 /// On the window thread: saves the check result and shows the bar when the release is newer and not hidden
@@ -227,8 +264,9 @@ pub fn apply() {
     if let Err(error) = copied {
         crate::show_error(&tf("update.failed", &[("message", &error)]));
     }
-    // Start the installed copy either way: the new one, or the old one if replacing it failed.
-    let _ = std::process::Command::new(&target).spawn();
+    // Start the installed copy either way: the new one (it then opens its release notes), or the old one if
+    // replacing it failed.
+    let _ = std::process::Command::new(&target).arg("--updated").spawn();
 }
 
 /// Whether a WebView2 browser still uses the data folder (it keeps its lock file open without sharing).
@@ -273,6 +311,9 @@ fn describe(error: windows::core::Error) -> String {
 
 /// HTTPS GET with redirects (WinHTTP never follows HTTPS to HTTP), a status check, timeouts and a size limit.
 fn get(url: &str, accept: &str, max: usize) -> Result<Vec<u8>, String> {
+    // A debug build can test working without a network (`MDREAD_PRETEND_OFFLINE`): `.invalid` never resolves.
+    let offline = cfg!(debug_assertions) && std::env::var_os("MDREAD_PRETEND_OFFLINE").is_some();
+    let url = if offline { "https://mdread.invalid/" } else { url };
     let rest = url.strip_prefix("https://").ok_or("https")?;
     let (host, path) = rest.split_once('/').map_or((rest, "/".to_owned()), |(host, path)| (host, format!("/{path}")));
     let agent = HSTRING::from(format!("MDRead/{}", env!("CARGO_PKG_VERSION")));

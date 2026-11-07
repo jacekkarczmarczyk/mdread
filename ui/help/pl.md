@@ -109,7 +109,8 @@ automatyczne sprawdzanie aktualizacji i ta pomoc.
 
 Zainstalowany MDRead raz dziennie sprawdza na GitHubie, czy jest nowsza wersja. Jeśli jest, na dole okna
 pojawi się pasek z przyciskiem **Zainstaluj i uruchom ponownie**: program pobierze nową wersję, sprawdzi
-jej sumę kontrolną i uruchomi się od nowa z tymi samymi kartami. Bez kliknięcia nic nie jest pobierane.
+jej sumę kontrolną i uruchomi się od nowa z tymi samymi kartami, a w nowej karcie pokaże, co się zmieniło.
+Bez kliknięcia nic nie jest pobierane.
 Sprawdzanie wyłączysz w zębatce. Po jego włączeniu pasek od razu pokaże, czy masz najnowszą wersję.
 
 ### Edytor

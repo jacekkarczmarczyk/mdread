@@ -79,6 +79,8 @@ Want to edit files in MDRead itself, or add other features? Feel free to clone t
 - A newer version shows a bar at the bottom of the window. **Install and restart** downloads `mdread.exe`
   from the release, checks its SHA-256 against the digest GitHub publishes for the file, replaces the
   installed copy once the running one has closed and starts it again with the same tabs.
+- The first start of a newer version, whether updated from the bar or installed by hand, opens its release
+  notes in a tab. A first installation or reinstalling the same version doesn't.
 - Nothing is downloaded or run without that click; only HTTPS addresses of this repository are accepted.
 
 ## Installation
@@ -135,8 +137,8 @@ A debug build never shows the installer, so it opens an empty window when starte
 
 | Path | Contents |
 |---|---|
-| `%APPDATA%\mdread\settings.json` | theme, zoom, language, editors, open tabs, window placement, outline width and default, update check |
-| `%TEMP%\mdread-update` | the downloaded new version during an update |
+| `%APPDATA%\mdread\settings.json` | theme, zoom, language, editors, open tabs, window placement, outline width and default, update check, last run version |
+| `%TEMP%\mdread-update` | the downloaded new version during an update, release notes of the installed one |
 | `%APPDATA%\mdread\help` | a copy of the help page, refreshed on every start |
 | `%LOCALAPPDATA%\mdread` | WebView2 data |
 

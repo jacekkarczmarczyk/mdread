@@ -58,6 +58,9 @@ fn main() {
     // `--welcome`: the first run after installation opens the help.
     let welcome = flag(&args, "--welcome");
     args.retain(|arg| arg != "--welcome");
+    // `--updated`: started by an update (see update.rs), opens the release notes.
+    let updated = flag(&args, "--updated");
+    args.retain(|arg| arg != "--updated");
     // `--after <pid>`: a restart (e.g. after a language change) waits for the previous window to close,
     // otherwise it would hand the files over to it as a second instance.
     if let Some(index) = args.iter().position(|arg| arg == "--after") {
@@ -119,6 +122,7 @@ fn main() {
     // From now on the page saves the session (before this, every restored tab would mean a separate disk write).
     webview::send(json!({ "type": "startupDone" }));
     if !installer {
+        update::notes_after_update(hwnd, updated);
         update::start(hwnd, false);
     }
     window::run_loop();

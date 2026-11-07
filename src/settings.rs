@@ -146,6 +146,17 @@ pub fn set_update_dismissed(version: &str) {
     save(&settings);
 }
 
+/// Version of the last run, so the first run of a newer one opens its release notes.
+pub fn last_version() -> Option<String> {
+    load().get("lastVersion").and_then(Value::as_str).map(str::to_owned)
+}
+
+pub fn set_last_version(version: &str) {
+    let mut settings = load();
+    settings.insert("lastVersion".into(), Value::from(version));
+    save(&settings);
+}
+
 /// Main window at the last close: normal (restored) rectangle in workspace coordinates and whether it was maximized.
 pub struct WindowPlacement {
     pub left: i32,
