@@ -44,12 +44,14 @@ flowchart LR
     file[.md file] --> MDRead --> editor[Ctrl+E]
 ```
 
-If a `$` in the text is a price rather than a formula, the **Math** button switches to the source text.
+Diagrams (`mermaid` blocks) are first shown as code. The button with the diagram icon draws them,
+and a second click goes back to the code. If a `$` in the text is a price rather than a formula, the **Σ**
+button switches to the source text. A crossed-out icon means the option is off.
 
 ## Other things
 
 - **Edit ▾** lets you pick the editing program or add your own.
 - When the file changes on disk, a bar with a **Reload** button shows up above the text.
-- **Appearance**: theme (light, dark or same as Windows) and language.
+- The gear button: theme (light, dark or same as Windows) and language.
 - Images from the internet load only after you click them. Otherwise the author of the file could tell when you opened it.
 - Files of 2 MB or more open after you confirm; above 20 MB they only open in the editor.

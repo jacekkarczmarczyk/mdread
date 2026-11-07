@@ -9,7 +9,8 @@
   "tab.closeAll": "Close all",
   "empty": "Open a Markdown file: <kbd>Ctrl</kbd>+<kbd>O</kbd> or drag it here.",
 
-  "math.button": "Math",
+  "diagrams.on": "Mermaid diagrams on — click to show the code",
+  "diagrams.off": "Mermaid diagrams shown as code — click to draw them",
   "math.on": "Math on — click to show the source text (e.g. when $ is a price)",
   "math.off": "Math off — click to render it",
 

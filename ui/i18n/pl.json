@@ -9,7 +9,8 @@
   "tab.closeAll": "Zamknij wszystkie",
   "empty": "Otwórz plik Markdown: <kbd>Ctrl</kbd>+<kbd>O</kbd> albo przeciągnij go tutaj.",
 
-  "math.button": "Wzory",
+  "diagrams.on": "Diagramy Mermaid włączone — kliknij, aby pokazać kod",
+  "diagrams.off": "Diagramy Mermaid pokazane jako kod — kliknij, aby je narysować",
   "math.on": "Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)",
   "math.off": "Wzory wyłączone — kliknij, aby je wyrenderować",
 

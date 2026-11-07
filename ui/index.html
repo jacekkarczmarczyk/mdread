@@ -19,14 +19,33 @@
     <div id="tab-list" class="menu" role="menu" hidden></div>
   </div>
   <div id="tools">
-    <button id="math-toggle" class="tool" type="button" aria-pressed="true" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/></svg>
-      <span data-i18n="math.button"></span>
+    <!-- Przełączniki: wyłączony ma ikonę przekreśloną (.off-slash) -->
+    <button id="diagram-toggle" class="tool toggle" type="button" aria-pressed="false" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="5" height="4" rx="1"/><rect x="9" y="9.5" width="5" height="4" rx="1"/><path d="M4.5 6.5v3a2 2 0 0 0 2 2H9"/><path class="off-slash" d="M2 2l12 12"/></svg>
     </button>
+    <button id="math-toggle" class="tool toggle" type="button" aria-pressed="true" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 3.5H4.5L8.5 8l-4 4.5H12"/><path class="off-slash" d="M2 2l12 12"/></svg>
+    </button>
+    <div id="edit-tools" class="dropdown split" hidden>
+      <button id="edit" class="tool" type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
+        <span data-i18n="edit.button"></span>
+      </button>
+      <button id="edit-menu-button" class="tool" type="button" data-i18n-title="edit.choose" aria-haspopup="menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div id="edit-menu" class="menu" role="menu" hidden>
+        <div id="editor-list"></div>
+        <hr>
+        <button type="button" role="menuitem" data-action="chooseEditor">
+          <svg class="menu-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+          <span data-i18n="edit.chooseProgram"></span>
+        </button>
+      </div>
+    </div>
     <div class="dropdown">
       <button id="appearance-button" class="tool" type="button" data-i18n-title="appearance.button" aria-haspopup="menu">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2a6 6 0 1 0 0 12c.8 0 1.2-.5 1.2-1.1 0-.7-.6-1-.6-1.7 0-.7.5-1.2 1.2-1.2H11a3 3 0 0 0 3-3C14 4.4 11.3 2 8 2zM5 8h.01M6.5 5h.01M9.5 5h.01M11 7.5h.01"/></svg>
-        <span data-i18n="appearance.button"></span>
+        <svg class="icon-24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v2M12 22v-2M17 20.66l-1-1.73M11 10.27L7 3.34M20.66 17l-1.73-1M3.34 7l1.73 1M14 12h8M2 12h2M20.66 7l-1.73 1M3.34 17l1.73-1M17 3.34l-1 1.73M11 13.73l-4 6.93"/></svg>
       </button>
       <div id="appearance-menu" class="menu" role="menu" hidden>
         <div class="menu-label" data-i18n="appearance.theme"></div>
@@ -45,23 +64,6 @@
         <button type="button" role="menuitemradio" data-language="system" data-i18n="language.system"></button>
         <button type="button" role="menuitemradio" data-language="pl" lang="pl">Polski</button>
         <button type="button" role="menuitemradio" data-language="en" lang="en">English</button>
-      </div>
-    </div>
-    <div id="edit-tools" class="dropdown split" hidden>
-      <button id="edit" class="tool" type="button">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3"/></svg>
-        <span data-i18n="edit.button"></span>
-      </button>
-      <button id="edit-menu-button" class="tool" type="button" data-i18n-title="edit.choose" aria-haspopup="menu">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
-      </button>
-      <div id="edit-menu" class="menu" role="menu" hidden>
-        <div id="editor-list"></div>
-        <hr>
-        <button type="button" role="menuitem" data-action="chooseEditor">
-          <svg class="menu-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
-          <span data-i18n="edit.chooseProgram"></span>
-        </button>
       </div>
     </div>
     <button id="help" class="tool" type="button" data-i18n-title="help.button">

@@ -44,12 +44,14 @@ flowchart LR
     plik[plik .md] --> MDRead --> edytor[Ctrl+E]
 ```
 
-Jeśli `$` w tekście oznacza cenę, a nie wzór, przycisk **Wzory** przełącza na tekst źródłowy.
+Diagramy (bloki `mermaid`) są najpierw pokazane jako kod. Rysuje je przycisk z ikoną schematu na pasku,
+a drugie kliknięcie wraca do kodu. Jeśli `$` w tekście oznacza cenę, a nie wzór, przycisk **Σ** przełącza
+na tekst źródłowy. Przekreślona ikona znaczy, że dana opcja jest wyłączona.
 
 ## Inne
 
 - **Edytuj ▾** pozwala wybrać program do edycji albo dodać własny.
 - Gdy plik zmieni się na dysku, nad treścią pojawi się pasek z przyciskiem **Odśwież**.
-- **Wygląd**: motyw (jasny, ciemny albo jak w systemie) i język.
+- Zębatka: motyw (jasny, ciemny albo jak w systemie) i język.
 - Obrazki z internetu wczytują się dopiero po kliknięciu. Inaczej autor pliku mógłby sprawdzić, kiedy go otworzyłeś.
 - Pliki od 2 MB otwierają się po potwierdzeniu, a powyżej 20 MB tylko w edytorze.

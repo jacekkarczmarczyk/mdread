@@ -162,6 +162,12 @@ body {
   stroke-linejoin: round;
 }
 
+/* Ikona rysowana na siatce 24×24 (zębatka): ta sama grubość linii co ikony 16×16 */
+.tool svg.icon-24 { stroke-width: 2.25; }
+
+/* Przyciski z samą ikoną: kwadratowe */
+#appearance-button, #help { padding: 0 7px; }
+
 .menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -387,4 +393,9 @@ img { max-width: 100%; }
 
 pre.mermaid-error { border-left: 3px solid #d1242f; }
 
-#math-toggle[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
+/* Przełączniki diagramów i wzorów: wyłączony wyszarzony, z przekreśloną ikoną */
+.tool.toggle { padding: 0 7px; }
+.tool.toggle[aria-pressed="false"] { color: var(--muted); }
+.tool.toggle[aria-pressed="false"] svg { opacity: .45; }
+.tool.toggle[aria-pressed="true"] .off-slash { display: none; }
+.tool.toggle:disabled { cursor: progress; }

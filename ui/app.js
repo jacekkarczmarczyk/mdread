@@ -52,6 +52,7 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
   const content = documentContent(path, html, error, false, notice);
   page.append(content);
   const hasMath = page.querySelector('[data-math-style]') !== null;
+  const hasDiagrams = page.querySelector('pre[lang="mermaid"]') !== null;
 
   const tab = document.createElement('div');
   tab.className = 'tab';
@@ -69,6 +70,8 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
 
   const entry = {
     path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
+    // Diagramy domyślnie jako kod; Mermaid (5 MB) ładuje się dopiero po włączeniu przyciskiem.
+    hasDiagrams, diagramsOn: false, diagrams: [],
     remoteBar: null, remoteAllowed: false,
     // Pozycja czytania z poprzedniego uruchomienia: odtwarzana, gdy karta jest widoczna, i jeszcze raz
     // po wzorach/diagramach (zmieniają wysokość bloków).
@@ -315,7 +318,9 @@ function reloadDocument({ path, html, error, notice }) {
   updateRemoteBar(entry);
   entry.math = [];
   entry.hasMath = content.querySelector('[data-math-style]') !== null;
-  if (entry === active) showMathToggle(entry);
+  entry.diagrams = [];
+  entry.hasDiagrams = content.querySelector('pre[lang="mermaid"]') !== null;
+  if (entry === active) showToggles(entry);
   restoreReadingPosition(entry.page, position);
   // Wzory i diagramy zmieniają wysokość bloków, więc po ich narysowaniu jeszcze raz.
   enhance(entry).then(() => restoreReadingPosition(entry.page, position));
@@ -336,7 +341,7 @@ function activate(entry) {
   empty.hidden = true;
   editTools.hidden = false;
   tabListTools.hidden = false;
-  showMathToggle(entry);
+  showToggles(entry);
   entry.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   entry.page.focus({ preventScroll: true });
   post({ type: 'active', path: entry.path, title: entry.title });
@@ -400,7 +405,7 @@ async function enhance(entry) {
   const jobs = [];
   if (code.length) jobs.push(highlightCode(code));
   if (math.length) jobs.push(renderMath(entry, math));
-  if (diagrams.length) jobs.push(renderDiagrams(diagrams));
+  if (diagrams.length && entry.diagramsOn) jobs.push(renderDiagrams(entry, diagrams));
   for (const result of await Promise.allSettled(jobs)) {
     if (result.status === 'rejected') console.error(result.reason);
   }
@@ -442,7 +447,7 @@ function initializeMermaid() {
   mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
 }
 
-async function renderDiagrams(blocks) {
+async function renderDiagrams(entry, blocks) {
   await load('vendor/mermaid/mermaid.min.js');
   initializeMermaid();
   for (const pre of blocks) {
@@ -453,7 +458,9 @@ async function renderDiagrams(blocks) {
       diagram.className = 'mermaid-diagram';
       diagram.dataset.source = pre.textContent;
       diagram.innerHTML = svg;
-      pre.replaceWith(diagram);
+      entry.diagrams.push({ source: pre, rendered: diagram });
+      // Przycisk mógł zostać kliknięty jeszcze raz w trakcie rysowania.
+      if (entry.diagramsOn) pre.replaceWith(diagram);
     } catch (error) {
       // Zostaje źródło diagramu z opisem błędu w podpowiedzi.
       document.getElementById(`d${id}`)?.remove();
@@ -463,9 +470,10 @@ async function renderDiagrams(blocks) {
   }
 }
 
-// Diagramy mają kolory wpisane w SVG, więc po zmianie jasny/ciemny rysujemy je od nowa.
+// Diagramy mają kolory wpisane w SVG, więc po zmianie jasny/ciemny rysujemy je od nowa
+// (także te schowane przełącznikiem).
 async function rerenderDiagrams() {
-  const diagrams = document.querySelectorAll('.mermaid-diagram');
+  const diagrams = tabs.flatMap((entry) => entry.diagrams.map(({ rendered }) => rendered));
   if (!diagrams.length) return;
   initializeMermaid();
   for (const diagram of diagrams) {
@@ -479,12 +487,40 @@ async function rerenderDiagrams() {
 }
 
 const mathToggle = document.getElementById('math-toggle');
+const diagramToggle = document.getElementById('diagram-toggle');
 
-function showMathToggle(entry) {
+// Przełączniki widać tylko przy dokumencie, który ma wzory / diagramy; stan jest osobny dla każdej karty.
+function showToggles(entry) {
   mathToggle.hidden = !entry.hasMath;
   mathToggle.setAttribute('aria-pressed', String(entry.mathOn));
   mathToggle.title = t(entry.mathOn ? 'math.on' : 'math.off');
+  diagramToggle.hidden = !entry.hasDiagrams;
+  diagramToggle.setAttribute('aria-pressed', String(entry.diagramsOn));
+  diagramToggle.title = t(entry.diagramsOn ? 'diagrams.on' : 'diagrams.off');
 }
+
+diagramToggle.addEventListener('click', async () => {
+  const entry = active;
+  if (!entry) return;
+  entry.diagramsOn = !entry.diagramsOn;
+  showToggles(entry);
+  if (entry.diagramsOn && !entry.diagrams.length) {
+    // Pierwsze włączenie: ładowanie Mermaida i rysowanie (chwilę trwa, przycisk w tym czasie nieaktywny).
+    diagramToggle.disabled = true;
+    try {
+      await renderDiagrams(entry, entry.page.querySelectorAll('pre[lang="mermaid"]'));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      diagramToggle.disabled = false;
+    }
+    return;
+  }
+  for (const { source, rendered } of entry.diagrams) {
+    if (entry.diagramsOn) source.replaceWith(rendered);
+    else rendered.replaceWith(source);
+  }
+});
 
 mathToggle.addEventListener('click', () => {
   if (!active) return;
@@ -493,7 +529,7 @@ mathToggle.addEventListener('click', () => {
     if (active.mathOn) source.replaceWith(rendered);
     else rendered.replaceWith(source);
   }
-  showMathToggle(active);
+  showToggles(active);
 });
 
 // Wywoływane z menu kontekstowego hosta.
@@ -537,6 +573,7 @@ function closeTabs(list, keepWindow = false) {
     editTools.hidden = true;
     tabListTools.hidden = true;
     mathToggle.hidden = true;
+    diagramToggle.hidden = true;
     post({ type: 'active', path: null, title: null });
   } else if (!tabs.includes(active)) {
     // Następna karta za zamkniętą aktywną, a gdy jej nie ma, poprzednia.
