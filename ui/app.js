@@ -502,12 +502,17 @@ editButton.addEventListener('click', editActive);
 const menus = [];
 
 function dropdown(button, menu, onSelect) {
-  const toggle = (open = menu.hidden) => {
-    for (const other of menus) if (other !== toggle) other(false);
+  // setOpen tylko ustawia stan; inne menu zamykamy przez ich setOpen, bez ponownego przełączania
+  // (wcześniej wzajemne zamykanie wywoływało się w kółko i kończyło przepełnieniem stosu).
+  const setOpen = (open) => {
     menu.hidden = !open;
     button.setAttribute('aria-expanded', String(open));
   };
-  menus.push(toggle);
+  const toggle = (open = menu.hidden) => {
+    if (open) for (const other of menus) if (other !== setOpen) other(false);
+    setOpen(open);
+  };
+  menus.push(setOpen);
   button.addEventListener('click', (event) => {
     event.stopPropagation();
     toggle();
@@ -521,7 +526,7 @@ function dropdown(button, menu, onSelect) {
   });
 }
 
-const closeMenus = () => { for (const toggle of menus) toggle(false); };
+const closeMenus = () => { for (const setOpen of menus) setOpen(false); };
 document.addEventListener('click', closeMenus);
 window.addEventListener('blur', closeMenus);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMenus(); });
