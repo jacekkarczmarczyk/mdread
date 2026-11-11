@@ -167,6 +167,10 @@ body {
   stroke-linejoin: round;
 }
 
+/* Work in progress (e.g. "Downloading"): a turning arc in place of the icon */
+.tool svg.spinner { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Icon drawn on a 24×24 grid (gear): same line weight as the 16×16 icons */
 .tool svg.icon-24 { stroke-width: 2.25; }
 

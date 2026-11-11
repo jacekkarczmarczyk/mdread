@@ -1087,6 +1087,8 @@ function showUpdate(update) {
     install.disabled = true;
     hide.disabled = true;
     install.lastChild.textContent = t('update.downloading');
+    install.querySelector('svg').innerHTML = '<path d="M8 2.5a5.5 5.5 0 1 1-5.5 5.5"/>';
+    install.querySelector('svg').classList.add('spinner');
     post({ type: 'installUpdate' });
   });
   install.classList.add('primary');
