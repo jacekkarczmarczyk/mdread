@@ -71,6 +71,7 @@
   "outline.openByDefault": "Open for new files",
   "update.section": "Updates · version {version}",
   "update.check": "Check automatically",
+  "update.checkNow": "Check now",
   "update.available": "A new version {version} is available (you have {current}).",
   "update.whatsNew": "What's new",
   "update.install": "Install and restart",

@@ -75,7 +75,12 @@
         <div class="menu-label" data-i18n="outline.title"></div>
         <button type="button" role="menuitemcheckbox" data-outline-default data-i18n="outline.openByDefault"></button>
         <hr>
-        <div class="menu-label" id="update-section"></div>
+        <div class="menu-label-row">
+          <div class="menu-label" id="update-section"></div>
+          <button type="button" class="menu-remove menu-refresh" data-action="checkUpdate" data-i18n-title="update.checkNow">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3"/></svg>
+          </button>
+        </div>
         <button type="button" role="menuitemcheckbox" data-update-check data-i18n="update.check"></button>
         <hr>
         <button type="button" role="menuitem" data-action="help" data-i18n="help.button"></button>

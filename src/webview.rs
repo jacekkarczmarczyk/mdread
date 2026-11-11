@@ -292,6 +292,7 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
                 }
             }
         }
+        Some("checkUpdate") => update::start(hwnd, true),
         Some("updateDismiss") => {
             if let Some(version) = message["version"].as_str() {
                 settings::set_update_dismissed(version);

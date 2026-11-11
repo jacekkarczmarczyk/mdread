@@ -1101,10 +1101,20 @@ function showUpdate(update) {
 }
 
 // A result waits until "Checking…" has been visible for 3 s, so a saved (instant) result does not just flash it;
-// dropped if the switch was turned off meanwhile.
+// dropped if the switch was turned off meanwhile. "Check now" shows its result also with the switch off.
 let checkingUntil = 0;
+let checkingNow = false;
 function afterChecking(show) {
-  setTimeout(() => { if (updateCheck) show(); }, Math.max(0, checkingUntil - Date.now()));
+  setTimeout(() => {
+    if (updateCheck || checkingNow) show();
+    checkingNow = false;
+  }, Math.max(0, checkingUntil - Date.now()));
+}
+
+function showChecking() {
+  checkingUntil = Date.now() + 3000;
+  showUpdateStatus(t('update.checking'), { closable: false });
+  updateText.append(Object.assign(document.createElement('span'), { className: 'update-dots' }));
 }
 
 // After the switch is turned on: "Checking…", then "You're using the latest version" or why the check failed.
@@ -1303,13 +1313,16 @@ dropdown(document.getElementById('appearance-button'), appearanceMenu, (item) =>
   if ('updateCheck' in item.dataset) {
     updateCheck = !updateCheck;
     showUpdateCheck();
-    if (updateCheck) {
-      checkingUntil = Date.now() + 3000;
-      showUpdateStatus(t('update.checking'), { closable: false });
-      updateText.append(Object.assign(document.createElement('span'), { className: 'update-dots' }));
-    }
+    checkingNow = false;
+    if (updateCheck) showChecking();
     else updateBar.hidden = true;
     post({ type: 'updateCheck', enabled: updateCheck });
+    return;
+  }
+  if (item.dataset.action === 'checkUpdate') {
+    checkingNow = true;
+    showChecking();
+    post({ type: 'checkUpdate' });
     return;
   }
   if ('outlineDefault' in item.dataset) {

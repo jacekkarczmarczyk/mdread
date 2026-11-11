@@ -220,6 +220,10 @@ svg.menu-icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-line
 #editor-list:empty + hr { display: none; }
 .menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); background: none; }
 .menu-label { padding: 6px 10px 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.menu-label-row { display: flex; align-items: center; }
+/* A heading with a button on the right (updates: "Check now"): text centered with the icon */
+.menu-label-row > .menu-label { flex: 1; padding-top: 0; padding-bottom: 0; }
+.menu-refresh svg { width: 14px; height: 14px; stroke-linejoin: round; }
 
 /* Tooltip with the link address */
 

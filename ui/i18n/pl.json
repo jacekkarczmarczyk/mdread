@@ -71,6 +71,7 @@
   "outline.openByDefault": "Otwieraj przy nowych plikach",
   "update.section": "Aktualizacje · wersja {version}",
   "update.check": "Sprawdzaj automatycznie",
+  "update.checkNow": "Sprawdź teraz",
   "update.available": "Dostępna nowa wersja {version} (masz {current}).",
   "update.whatsNew": "Co nowego",
   "update.install": "Zainstaluj i uruchom ponownie",

@@ -93,10 +93,11 @@ fn now() -> u64 {
 }
 
 /// Starts the check in the background: from the saved result if it is less than a day old, otherwise from GitHub.
-/// `manual` (the switch was just turned on): always from GitHub (a release may have come out since the saved
-/// check), and the page shows the result even when there is nothing new.
+/// `manual` (the switch was just turned on, or "Check now" in the menu, also with the switch off): always from
+/// GitHub (a release may have come out since the saved check), and the page shows the result even when there is
+/// nothing new.
 pub fn start(hwnd: HWND, manual: bool) {
-    if !settings::update_check() || !may_update() {
+    if (!manual && !settings::update_check()) || !may_update() {
         return;
     }
     // Set before the check below, so a check already running reports to the page too.
