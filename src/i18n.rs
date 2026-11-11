@@ -3,14 +3,12 @@
 use std::sync::{OnceLock, RwLock};
 
 use serde_json::{Map, Value, json};
-
-/// Language settings to choose from in the menu (`system` means the Windows display language).
-pub const SETTINGS: &[&str] = &["system", "en", "pl"];
 use windows::Win32::Globalization::GetUserDefaultUILanguage;
 
 use crate::settings;
 
-/// Interface languages; the first is the fallback when a text or the system language is missing.
+/// Interface languages (also the choices in the menu); the first is the fallback when a text or the system
+/// language is missing.
 pub const LANGUAGES: &[&str] = &["en", "pl"];
 
 const LANG_POLISH: u16 = 0x15;
@@ -27,12 +25,15 @@ fn dictionary(language: &str) -> &'static Map<String, Value> {
     cell.get_or_init(|| serde_json::from_str(source).expect("i18n dictionary"))
 }
 
-/// Sets the language from the settings (`system` → the Windows display language).
+/// Sets the language from the settings. On the first run (no language saved yet, or `system` from older versions)
+/// it is the Windows display language, saved right away; from then on only the menu changes it.
 pub fn init() {
-    let language = match settings::language().as_str() {
-        "system" => system_language(),
-        chosen => LANGUAGES.iter().copied().find(|&language| language == chosen).unwrap_or(LANGUAGES[0]),
-    };
+    let saved = settings::language();
+    let language = LANGUAGES.iter().copied().find(|&language| language == saved).unwrap_or_else(|| {
+        let language = system_language();
+        settings::set_language(language);
+        language
+    });
     *CURRENT.write().unwrap() = language;
 }
 

@@ -322,7 +322,7 @@ fn on_page_message(message: &Value, args: &ICoreWebView2WebMessageReceivedEventA
         },
         Some("setLanguage") => {
             let language = message["language"].as_str().unwrap_or_default();
-            if i18n::SETTINGS.contains(&language) && language != settings::language() {
+            if i18n::LANGUAGES.contains(&language) && language != settings::language() {
                 settings::set_language(language);
                 let paths: Vec<PathBuf> = message["paths"]
                     .as_array()

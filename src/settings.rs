@@ -81,7 +81,7 @@ pub fn set_session(session: Value) {
     save(&settings);
 }
 
-/// `system`, `pl` or `en`.
+/// `pl` or `en`; until the first run sets it from Windows (`i18n::init`), `system` (as older versions saved).
 pub fn language() -> String {
     load().get("language").and_then(Value::as_str).unwrap_or("system").to_owned()
 }

@@ -28,7 +28,6 @@
   "mode.system": "Same as system",
   "mode.light": "Light",
   "mode.dark": "Dark",
-  "language.system": "Same as system",
 
   "edit.button": "Edit",
   "edit.title": "Edit in: {name} (Ctrl+E)",
