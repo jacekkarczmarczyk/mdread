@@ -20,7 +20,7 @@ use webview2_com::{
 use windows::Win32::Foundation::{E_POINTER, HWND, RECT};
 use windows::Win32::System::Com::IStream;
 use windows::Win32::UI::Shell::SHCreateMemStream;
-use windows::Win32::UI::WindowsAndMessaging::GetClientRect;
+use windows::Win32::UI::WindowsAndMessaging::{GetClientRect, GetForegroundWindow};
 use windows::core::{Error, HSTRING, Interface, PWSTR, Result};
 
 use crate::markdown::{LOCAL_PREFIX, percent_decode};
@@ -246,6 +246,11 @@ fn on_controller(env: ICoreWebView2Environment, controller: ICoreWebView2Control
             state.controller = Some(controller);
             state.webview = Some(webview);
         });
+        // WM_SETFOCUS came before the controller existed, so the window's focus has to be passed on now;
+        // otherwise keyboard shortcuts work only after a click on the page.
+        if GetForegroundWindow() == hwnd {
+            focus();
+        }
     }
     Ok(())
 }
