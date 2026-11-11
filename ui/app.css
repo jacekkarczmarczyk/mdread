@@ -15,7 +15,12 @@ body {
   font-family: var(--font-text);
   font-size: var(--font-size);
   line-height: var(--line-height);
+  /* Only the document text can be selected (and the installer, e.g. to copy an error), not the UI around it */
+  user-select: none;
 }
+
+.page, #installer { user-select: text; }
+.page button { user-select: none; }
 
 [hidden] { display: none !important; }
 

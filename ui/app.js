@@ -415,7 +415,30 @@ function reloadActive() {
   if (active?.path) post({ type: 'reload', path: active.path });
 }
 
+// Ctrl+A: the document in the active tab only, not the other tabs, the outline or the buttons.
+function selectDocument() {
+  if (!active) return;
+  const range = document.createRange();
+  range.selectNodeContents(active.content);
+  getSelection().removeAllRanges();
+  getSelection().addRange(range);
+}
+
+// The page has one selection, so each tab keeps its own: saved when the tab is left, back when it returns
+// (unless the document was reloaded in the meantime). A hidden tab never stays selected, so Ctrl+C copies
+// only what can be seen.
+function switchSelection(from, to) {
+  const selection = getSelection();
+  if (from) {
+    const range = selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    from.selection = range && !range.collapsed && from.content.contains(range.commonAncestorContainer) ? range : null;
+  }
+  selection.removeAllRanges();
+  if (to?.selection && to.content.contains(to.selection.commonAncestorContainer)) selection.addRange(to.selection);
+}
+
 function activate(entry) {
+  if (active !== entry) switchSelection(tabs.includes(active) ? active : null, entry);
   // A hidden tab has no dimensions, so the reading position is saved before it disappears from view.
   if (active && active !== entry && tabs.includes(active)) active.position = readingPosition(active.page);
   for (const other of tabs) {
@@ -796,6 +819,7 @@ window.addEventListener('keydown', (event) => {
   else if (key === 'o' && event.shiftKey) toggleOutline();
   else if (key === 't' && event.shiftKey) reopenClosedTab();
   else if (key === 'o') post({ type: 'openDialog' });
+  else if (key === 'a') selectDocument();
   else if (key === 'e') editActive();
   else if (key === 'r') reloadActive();
   else if ((key === 'w' || key === 'f4') && active) close(active);
