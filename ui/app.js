@@ -77,6 +77,8 @@ function openDocument({ path, title, html, error, anchor, notice, position }) {
     path, key, title, tab, page, content, hasMath, mathOn: true, math: [], bar: null,
     // Diagrams shown as code by default; Mermaid (5 MB) loads only once turned on with the button.
     hasDiagrams, diagramsOn: false, diagrams: [], diagramsRendered: false, outlineOpen: outlineByDefault,
+    // Content in the theme's column by default; full width is not remembered between runs.
+    fullWidth: false,
     remoteBar: null, remoteAllowed: false,
     // Reading position from the previous run: restored when the tab is visible, and once more
     // after formulas/diagrams (they change block heights).
@@ -611,6 +613,7 @@ async function rerenderDiagrams() {
 
 const mathToggle = document.getElementById('math-toggle');
 const diagramToggle = document.getElementById('diagram-toggle');
+const widthToggle = document.getElementById('width-toggle');
 
 // Formula and diagram toggles; the state is separate for each tab. A file without formulas / diagrams has the button
 // unavailable (disabled), which still takes up space: otherwise the bar would change width when switching
@@ -622,7 +625,17 @@ function showToggles(entry) {
   diagramToggle.disabled = !entry.hasDiagrams;
   diagramToggle.setAttribute('aria-pressed', String(entry.hasDiagrams && entry.diagramsOn));
   diagramToggle.title = t(!entry.hasDiagrams ? 'diagrams.none' : entry.diagramsOn ? 'diagrams.on' : 'diagrams.off');
+  widthToggle.setAttribute('aria-pressed', String(entry.fullWidth));
+  widthToggle.title = t(entry.fullWidth ? 'width.on' : 'width.off');
 }
+
+// Full width: the content takes the whole page width instead of the theme's column (e.g. for wide tables).
+widthToggle.addEventListener('click', () => {
+  if (!active) return;
+  active.fullWidth = !active.fullWidth;
+  active.page.classList.toggle('full-width', active.fullWidth);
+  showToggles(active);
+});
 
 diagramToggle.addEventListener('click', async () => {
   const entry = active;

@@ -73,9 +73,15 @@ flowchart LR
 Diagrams (`mermaid` blocks) are first shown as code. The button with the diagram icon draws them,
 and a second click goes back to the code.
 
-The outline, formula and diagram buttons sit next to each other before **Edit**. A highlighted button
-means the option is on, a crossed-out icon means it is off, and a barely visible one means the file
-has no formulas or diagrams.
+### Full width
+
+The content is shown in a column, and a table wider than it gets its own horizontal scrollbar.
+The button with the arrows extends the content to the full window width, so wide tables need
+scrolling less often. The setting applies only to the current tab.
+
+The outline, formula, diagram and full width buttons sit next to each other before **Edit**.
+A highlighted button means the option is on, a crossed-out icon means it is off, and a barely
+visible one means the file has no formulas or diagrams.
 
 ### Images from the internet
 

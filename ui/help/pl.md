@@ -74,9 +74,15 @@ flowchart LR
 Diagramy (bloki `mermaid`) są najpierw pokazane jako kod. Rysuje je przycisk z ikoną schematu na pasku,
 a drugie kliknięcie wraca do kodu.
 
-Przyciski spisu treści, wzorów i diagramów są obok siebie przed **Edytuj**. Podświetlony przycisk
-oznacza opcję włączoną, przekreślona ikona wyłączoną, a ledwo widoczna, że w pliku nie ma wzorów
-albo diagramów.
+### Pełna szerokość
+
+Treść jest pokazana w kolumnie, a tabela szersza od niej ma własny poziomy pasek przewijania.
+Przycisk ze strzałkami na pasku rozszerza treść na całą szerokość okna, więc szerokie tabele
+rzadziej trzeba przewijać. Ustawienie dotyczy tylko bieżącej karty.
+
+Przyciski spisu treści, wzorów, diagramów i pełnej szerokości są obok siebie przed **Edytuj**.
+Podświetlony przycisk oznacza opcję włączoną, przekreślona ikona wyłączoną, a ledwo widoczna, że
+w pliku nie ma wzorów albo diagramów.
 
 ### Obrazki z internetu
 

@@ -15,6 +15,8 @@
   "diagrams.none": "Brak diagramów Mermaid w tym pliku",
   "diagrams.on": "Diagramy Mermaid włączone — kliknij, aby pokazać kod",
   "diagrams.off": "Diagramy Mermaid pokazane jako kod — kliknij, aby je narysować",
+  "width.on": "Treść na całą szerokość okna — kliknij, aby wrócić do kolumny",
+  "width.off": "Treść w kolumnie — kliknij, aby pokazać ją na całą szerokość okna (np. dla szerokich tabel)",
   "math.on": "Wzory włączone — kliknij, aby pokazać tekst źródłowy (np. gdy $ to cena)",
   "math.off": "Wzory wyłączone — kliknij, aby je wyrenderować",
 

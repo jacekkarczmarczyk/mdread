@@ -15,6 +15,8 @@
   "diagrams.none": "No Mermaid diagrams in this file",
   "diagrams.on": "Mermaid diagrams on — click to show the code",
   "diagrams.off": "Mermaid diagrams shown as code — click to draw them",
+  "width.on": "Content uses the full window width — click to go back to the column",
+  "width.off": "Content in a column — click to use the full window width (e.g. for wide tables)",
   "math.on": "Math on — click to show the source text (e.g. when $ is a price)",
   "math.off": "Math off — click to render it",
 
