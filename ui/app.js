@@ -701,9 +701,9 @@ function reopenClosedTab() {
   post({ type: 'reopen', path: closed.path });
 }
 
-// Closes tabs (one, or several from the tab menu) and saves the session once. Closing the last tab closes
-// the window like Notepad; "Close all" (keepWindow) leaves an empty window like VS Code.
-function closeTabs(list, keepWindow = false) {
+// Closes tabs (one, or several from the tab menu) and saves the session once. Closing the last tab leaves
+// an empty window like VS Code; the window closes only with its own close button.
+function closeTabs(list) {
   const before = [...tabs];
   for (const entry of list) {
     const index = tabs.indexOf(entry);
@@ -717,12 +717,6 @@ function closeTabs(list, keepWindow = false) {
     entry.bar?.remove();
     entry.remoteBar?.remove();
     post({ type: 'closed', path: entry.path });
-  }
-  if (tabs.length === 0 && !keepWindow) {
-    // First the empty session (immediately, not delayed), then closing the window.
-    saveSession(true);
-    post({ type: 'close' });
-    return;
   }
   if (tabs.length === 0) {
     active = null;
@@ -1042,7 +1036,7 @@ tabMenu.addEventListener('click', (event) => {
   const action = item.dataset.action;
   if (action === 'reveal' || action === 'revealInTotalCommander') return post({ type: action, path: entry.path });
   if (action === 'close') return closeTabs([entry]);
-  if (action === 'closeAll') return closeTabs([...tabs], true);
+  if (action === 'closeAll') return closeTabs([...tabs]);
   // Like in VS Code: the tab the menu was opened on stays active.
   if (action === 'closeOthers') closeTabs(tabs.filter((other) => other !== entry));
   else if (action === 'closeLeft') closeTabs(tabs.slice(0, index));
